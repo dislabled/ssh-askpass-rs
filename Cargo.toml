@@ -1,0 +1,28 @@
+[package]
+name = "ssh-askpass-rs"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "ssh-askpass-rs"
+path = "src/main.rs"
+
+[dependencies]
+objc2 = "0.6"
+objc2-app-kit = { version = "0.3", features = [
+    "NSAlert",
+    "NSApplication",
+    "NSButton",
+    "NSCell",
+    "NSControl",
+    "NSResponder",
+    "NSRunningApplication",
+    "NSSecureTextField",
+    "NSTextField",
+    "NSView",
+    "NSWindow",
+] }
+objc2-foundation = { version = "0.3", features = ["NSString", "NSThread"] }
+security-framework = "3"
+zeroize = { version = "1", features = ["derive"] }
+libc = "0.2"
