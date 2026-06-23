@@ -132,8 +132,11 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
         };
     }
 
-    // Enter passphrase for '<key>':  (single-quoted)
-    if prompt.starts_with("Enter passphrase for '") && prompt.ends_with("': ") {
+    // Enter passphrase for '<key>':  (single-quoted, openssh)
+    // Enter passphrase for key '<key>':  (single-quoted, git ssh variant)
+    if (prompt.starts_with("Enter passphrase for '") || prompt.starts_with("Enter passphrase for key '"))
+        && prompt.ends_with("': ")
+    {
         let id = extract_single_quoted(prompt);
         return ParsedPrompt {
             display_type: DisplayType::Password,
