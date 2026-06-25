@@ -19,8 +19,12 @@ fn main() {
     if !parsed.skip_keychain {
         if let Some(id) = &parsed.identifier {
             if let Some(password) = keychain::read(id) {
-                print!("{}\n", password.as_str());
+                let _ = std::io::stdout().write_all(password.as_bytes());
+                if !password.ends_with('\n') {
+                    let _ = std::io::stdout().write_all(b"\n");
+                }
                 let _ = std::io::stdout().flush();
+                drop(password);
                 std::process::exit(0);
             }
         }
@@ -31,13 +35,11 @@ fn main() {
 
     match result {
         DialogResult::Accepted { secret, save_to_keychain } => {
-            // Write credential to stdout (OpenSSH reads from here)
-            let output = if secret.ends_with('\n') {
-                secret.as_str().to_string()
-            } else {
-                format!("{}\n", secret.as_str())
-            };
-            print!("{}", output);
+            // Write credential to stdout without creating an intermediate String copy
+            let _ = std::io::stdout().write_all(secret.as_bytes());
+            if !secret.ends_with('\n') {
+                let _ = std::io::stdout().write_all(b"\n");
+            }
             let _ = std::io::stdout().flush();
 
             // Store in keychain only if the user checked the checkbox
@@ -47,6 +49,7 @@ fn main() {
                 }
             }
 
+            drop(secret);
             std::process::exit(0);
         }
         DialogResult::Cancelled => {

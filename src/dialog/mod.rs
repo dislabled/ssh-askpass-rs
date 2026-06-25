@@ -4,7 +4,16 @@ mod host_key;
 mod password;
 
 use crate::prompt::DisplayType;
+use objc2_app_kit::{NSAlert, NSImage};
+use objc2_foundation::NSString;
 use zeroize::Zeroizing;
+
+pub(super) fn set_security_icon(alert: &NSAlert) {
+    let name = NSString::from_str("NSSecurity");
+    if let Some(icon) = NSImage::imageNamed(&name) {
+        unsafe { alert.setIcon(Some(&icon)) };
+    }
+}
 
 pub enum DialogResult {
     Accepted {

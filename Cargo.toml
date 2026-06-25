@@ -1,6 +1,6 @@
 [package]
 name = "ssh-askpass-rs"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 
 [[bin]]
@@ -15,6 +15,7 @@ objc2-app-kit = { version = "0.3", features = [
     "NSButton",
     "NSCell",
     "NSControl",
+    "NSImage",
     "NSResponder",
     "NSRunningApplication",
     "NSSecureTextField",

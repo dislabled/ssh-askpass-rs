@@ -1,4 +1,4 @@
-use crate::dialog::DialogResult;
+use crate::dialog::{set_security_icon, DialogResult};
 use crate::security::disable_core_dumps;
 use objc2_app_kit::{
     NSAlert, NSAlertFirstButtonReturn, NSAlertStyle, NSApplication, NSApplicationActivationPolicy,
@@ -16,6 +16,7 @@ pub fn show(prompt: &str) -> DialogResult {
     app.activate();
 
     let alert = NSAlert::new(mtm);
+    set_security_icon(&alert);
     let title = NSString::from_str("Unknown SSH Host Key");
     alert.setMessageText(&title);
 

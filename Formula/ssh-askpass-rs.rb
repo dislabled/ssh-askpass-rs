@@ -17,7 +17,7 @@ class SshAskpassRs < Formula
     <<~EOS
       To enable ssh-askpass-rs for your shell, add to ~/.zshrc:
         export SSH_ASKPASS="#{bin}/ssh-askpass-rs"
-        export SSH_ASKPASS_REQUIRE=prefer
+        export SSH_ASKPASS_REQUIRE=force
 
       For system-wide use (including GUI apps), install the LaunchAgent:
         cp #{pkgshare}/com.github.dislabled.ssh-askpass-rs.plist ~/Library/LaunchAgents/

@@ -1,4 +1,4 @@
-use crate::dialog::DialogResult;
+use crate::dialog::{set_security_icon, DialogResult};
 use crate::security::disable_core_dumps;
 use objc2_app_kit::{
     NSAlert, NSAlertFirstButtonReturn, NSAlertStyle, NSApplication, NSApplicationActivationPolicy,
@@ -17,6 +17,7 @@ pub fn show(prompt: &str, identifier: Option<&str>) -> DialogResult {
     app.activate();
 
     let alert = NSAlert::new(mtm);
+    set_security_icon(&alert);
     let title = NSString::from_str("SSH");
     alert.setMessageText(&title);
 
@@ -55,6 +56,9 @@ pub fn show(prompt: &str, identifier: Option<&str>) -> DialogResult {
     let response = alert.runModal();
 
     if response == NSAlertFirstButtonReturn {
+        // value is an NSString in AppKit-managed memory which i
+        // dont know if can be wiped.
+        // s is moved into Zeroizing below and will be zeroed on drop.
         let value = field.stringValue();
         let s = value.to_string();
         drop(field);

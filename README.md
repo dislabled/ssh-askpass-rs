@@ -1,6 +1,6 @@
 # ssh-askpass-rs
 
-A macOS SSH askpass helper, inspired by [ksshaskpass](https://github.com/KDE/ksshaskpass).
+A macOS SSH askpass helper, inspired by [ksshaskpass](https://invent.kde.org/plasma/ksshaskpass).
 
 Displays native macOS dialogs for SSH credential prompts and stores secrets in the macOS Keychain.
 
@@ -14,6 +14,7 @@ Displays native macOS dialogs for SSH credential prompts and stores secrets in t
 ### Homebrew (recommended)
 
 ```sh
+brew tap dislabled/ssh-askpass-rs https://github.com/dislabled/ssh-askpass-rs
 brew install dislabled/ssh-askpass-rs/ssh-askpass-rs
 ```
 
