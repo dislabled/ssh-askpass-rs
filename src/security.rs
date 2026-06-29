@@ -1,11 +1,12 @@
-// disable coredumps because it could contain passwords
 pub fn disable_core_dumps() {
     unsafe {
         let rlim = libc::rlimit {
             rlim_cur: 0,
             rlim_max: 0,
         };
-        libc::setrlimit(libc::RLIMIT_CORE, &rlim);
+        if libc::setrlimit(libc::RLIMIT_CORE, &rlim) != 0 {
+            eprintln!("ssh-askpass-rs: warning: failed to disable core dumps");
+        }
     }
 }
 

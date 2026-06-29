@@ -8,6 +8,8 @@ use prompt::{parse_prompt, prompt_type_from_env};
 use std::io::Write;
 
 fn main() {
+    security::disable_core_dumps();
+
     let prompt_str = std::env::args()
         .nth(1)
         .unwrap_or_else(|| "Please enter passphrase".to_string());
