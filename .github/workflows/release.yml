@@ -10,6 +10,8 @@ jobs:
     runs-on: macos-14
     permissions:
       contents: write
+    env:
+      TAG: ${{ github.ref_name }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -17,22 +19,14 @@ jobs:
 
       - name: Set version from tag
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          sed -i '' "s|^version = \"[^\"]*\"|version = \"${VERSION}\"|" Cargo.toml
+          echo "VERSION=${TAG#v}" >> "$GITHUB_ENV"
+          sed -i '' "s|^version = \"[^\"]*\"|version = \"${TAG#v}\"|" Cargo.toml
 
-      - name: Add targets
+      - name: Build universal binary
         run: |
-          rustup target add aarch64-apple-darwin
-          rustup target add x86_64-apple-darwin
-
-      - name: Build (Apple Silicon)
-        run: cargo build --release --target aarch64-apple-darwin
-
-      - name: Build (Intel)
-        run: cargo build --release --target x86_64-apple-darwin
-
-      - name: Create universal binary
-        run: |
+          rustup target add aarch64-apple-darwin x86_64-apple-darwin
+          cargo build --release --target aarch64-apple-darwin
+          cargo build --release --target x86_64-apple-darwin
           lipo -create \
             target/aarch64-apple-darwin/release/ssh-askpass-rs \
             target/x86_64-apple-darwin/release/ssh-askpass-rs \
@@ -45,9 +39,8 @@ jobs:
 
       - name: Update Homebrew formula
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
           SHA256=$(shasum -a 256 ssh-askpass-rs-macos.tar.gz | awk '{print $1}')
-          sed -i '' "s|releases/download/v[^/]*/|releases/download/${GITHUB_REF_NAME}/|" Formula/ssh-askpass-rs.rb
+          sed -i '' "s|releases/download/v[^/]*/|releases/download/${TAG}/|" Formula/ssh-askpass-rs.rb
           sed -i '' "s|  version \"[^\"]*\"|  version \"${VERSION}\"|" Formula/ssh-askpass-rs.rb
           sed -i '' "s|  sha256 \"[^\"]*\"|  sha256 \"${SHA256}\"|" Formula/ssh-askpass-rs.rb
 
@@ -56,7 +49,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Formula/ssh-askpass-rs.rb Cargo.toml Cargo.lock
-          git diff --cached --quiet || git commit -m "Update formula for ${GITHUB_REF_NAME}"
+          git diff --cached --quiet || git commit -m "Update formula for ${TAG}"
           git push origin HEAD:main
 
       - name: Create GitHub release
