@@ -63,7 +63,7 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
     }
 
     // Remote password auth (openssh): *'s password:
-    if let Some(id) = extract_after_prefix_before_suffix(prompt, "'s password: ", "") {
+    if let Some(id) = extract_before(prompt, "'s password: ") {
         if id.contains('@') && !id.contains('(') {
             return ParsedPrompt {
                 display_type: DisplayType::Password,
@@ -74,7 +74,7 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
     }
 
     // PAM variant: *'s Password:
-    if let Some(id) = extract_after_prefix_before_suffix(prompt, "'s Password: ", "") {
+    if let Some(id) = extract_before(prompt, "'s Password: ") {
         if id.contains('@') && !id.contains('(') {
             return ParsedPrompt {
                 display_type: DisplayType::Password,
@@ -85,7 +85,7 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
     }
 
     // PAM variant: * password:
-    if let Some(id) = extract_after_prefix_before_suffix(prompt, " password: ", "") {
+    if let Some(id) = extract_before(prompt, " password: ") {
         if id.contains('@') && !id.contains('(') {
             return ParsedPrompt {
                 display_type: DisplayType::Password,
@@ -96,7 +96,7 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
     }
 
     // PAM variant: * Password:
-    if let Some(id) = extract_after_prefix_before_suffix(prompt, " Password: ", "") {
+    if let Some(id) = extract_before(prompt, " Password: ") {
         if id.contains('@') && !id.contains('(') {
             return ParsedPrompt {
                 display_type: DisplayType::Password,
@@ -106,22 +106,8 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
         }
     }
 
-    // Old password prompts (skip keychain)
-    for prefix in &[
-        "Enter 's old password: ",
-        "Retype 's old password: ",
-        "Enter 's new password: ",
-        "Retype 's new password: ",
-    ] {
-        if prompt.starts_with(prefix) || prompt.contains(prefix) {
-            return ParsedPrompt {
-                display_type: DisplayType::Password,
-                identifier: None,
-                skip_keychain: true,
-            };
-        }
-    }
-    // Also check without the embedded apostrophe pattern
+    // Old/new password change prompts: "Enter|Retype <user>'s old|new password: "
+    // skip keychain
     if (prompt.starts_with("Enter ") || prompt.starts_with("Retype "))
         && (prompt.contains("'s old password: ") || prompt.contains("'s new password: "))
     {
@@ -161,8 +147,7 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
 
     // Bad passphrase: skip the keychain lookup (we already tried it and it was wrong),
     // but keep the identifier so the dialog can offer to overwrite the stale entry.
-    if prompt.starts_with("Bad passphrase, try again for ") {
-        let after = &prompt["Bad passphrase, try again for ".len()..];
+    if let Some(after) = prompt.strip_prefix("Bad passphrase, try again for ") {
         let key = after
             .trim_end_matches(": ")
             .trim_end_matches(" (will confirm each use)")
@@ -296,12 +281,9 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
     }
 }
 
-fn extract_after_prefix_before_suffix<'a>(s: &'a str, suffix: &str, _prefix: &str) -> Option<String> {
-    if let Some(pos) = s.find(suffix) {
-        Some(s[..pos].to_string())
-    } else {
-        None
-    }
+/// Returns everything before the first occurrence of `suffix`, if present.
+fn extract_before(s: &str, suffix: &str) -> Option<String> {
+    s.find(suffix).map(|pos| s[..pos].to_string())
 }
 
 fn extract_single_quoted(s: &str) -> Option<String> {
