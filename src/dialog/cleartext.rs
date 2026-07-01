@@ -14,7 +14,12 @@ pub fn show(prompt: &str, identifier: Option<&str>) -> DialogResult {
 
     let app = NSApplication::sharedApplication(mtm);
     app.setActivationPolicy(NSApplicationActivationPolicy::Accessory);
-    app.activate();
+    // A background (accessory) app must force itself frontmost or the alert
+    // opens without keyboard focus. Plain activate() doesn't pull focus from
+    // another app (notably under focus-follows-mouse window managers); the
+    // ignoringOtherApps variant does.
+    #[allow(deprecated)]
+    app.activateIgnoringOtherApps(true);
 
     let alert = NSAlert::new(mtm);
     set_security_icon(&alert);

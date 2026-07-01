@@ -13,7 +13,12 @@ pub fn show(prompt: &str, cancel_only: bool) -> DialogResult {
 
     let app = NSApplication::sharedApplication(mtm);
     app.setActivationPolicy(NSApplicationActivationPolicy::Accessory);
-    app.activate();
+    // A background (accessory) app must force itself frontmost or the alert
+    // opens without keyboard focus / a highlighted default button. Plain
+    // activate() doesn't pull focus from another app; the ignoringOtherApps
+    // variant does. runModal still centers the window, so don't reposition it.
+    #[allow(deprecated)]
+    app.activateIgnoringOtherApps(true);
 
     let alert = NSAlert::new(mtm);
     set_security_icon(&alert);
@@ -25,8 +30,12 @@ pub fn show(prompt: &str, cancel_only: bool) -> DialogResult {
     alert.setAlertStyle(NSAlertStyle::Warning);
 
     if cancel_only {
-        let cancel_label = NSString::from_str("Cancel");
-        alert.addButtonWithTitle(&cancel_label);
+        // Use "OK", not "Cancel": a lone button titled "Cancel" is special-cased
+        // by AppKit (bound to Escape, never the highlighted Return default), so
+        // it wouldn't respond to the keyboard. Dismissing still cancels (the
+        // function returns Cancelled below regardless of the label).
+        let ok_label = NSString::from_str("OK");
+        alert.addButtonWithTitle(&ok_label);
     } else {
         let accept_label = NSString::from_str("Accept");
         alert.addButtonWithTitle(&accept_label);

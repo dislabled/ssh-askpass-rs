@@ -13,7 +13,12 @@ pub fn show(prompt: &str) -> DialogResult {
 
     let app = NSApplication::sharedApplication(mtm);
     app.setActivationPolicy(NSApplicationActivationPolicy::Accessory);
-    app.activate();
+    // A background (accessory) app must force itself frontmost or the alert
+    // opens without keyboard focus / a highlighted default button. Plain
+    // activate() doesn't pull focus from another app; the ignoringOtherApps
+    // variant does. runModal still centers the window, so don't reposition it.
+    #[allow(deprecated)]
+    app.activateIgnoringOtherApps(true);
 
     let alert = NSAlert::new(mtm);
     set_security_icon(&alert);
