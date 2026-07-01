@@ -134,7 +134,8 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
 
     // Enter passphrase for '<key>':  (single-quoted, openssh)
     // Enter passphrase for key '<key>':  (single-quoted, git ssh variant)
-    if (prompt.starts_with("Enter passphrase for '") || prompt.starts_with("Enter passphrase for key '"))
+    if (prompt.starts_with("Enter passphrase for '")
+        || prompt.starts_with("Enter passphrase for key '"))
         && prompt.ends_with("': ")
     {
         let id = extract_single_quoted(prompt);
@@ -147,7 +148,10 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
     }
 
     // Enter passphrase for <key>:  (unquoted, no single quote in key)
-    if prompt.starts_with("Enter passphrase for ") && prompt.ends_with(": ") && !prompt.contains('\'') {
+    if prompt.starts_with("Enter passphrase for ")
+        && prompt.ends_with(": ")
+        && !prompt.contains('\'')
+    {
         let after = &prompt["Enter passphrase for ".len()..];
         let key = after
             .trim_end_matches(": ")
