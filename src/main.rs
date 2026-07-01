@@ -7,6 +7,12 @@ use dialog::DialogResult;
 use prompt::{parse_prompt, prompt_type_from_env};
 use std::io::Write;
 
+/// Autofill confirmation is on by default; setting SSH_ASKPASS_NO_CONFIRM to a
+/// non-empty value disables it system-wide (restoring silent autofill).
+fn autofill_confirm_disabled() -> bool {
+    std::env::var_os("SSH_ASKPASS_NO_CONFIRM").is_some_and(|v| !v.is_empty())
+}
+
 fn main() {
     security::disable_core_dumps();
 
@@ -21,13 +27,23 @@ fn main() {
     if !parsed.skip_keychain {
         if let Some(id) = &parsed.identifier {
             if let Some(password) = keychain::read(id) {
-                let _ = std::io::stdout().write_all(password.as_bytes());
-                if !password.ends_with('\n') {
-                    let _ = std::io::stdout().write_all(b"\n");
+                // For reusable remote passwords, confirm before silently
+                // releasing the secret (unless disabled system-wide via
+                // SSH_ASKPASS_NO_CONFIRM). On cancel, fall through to the
+                // manual entry dialog below.
+                let approved = !parsed.confirm_autofill
+                    || autofill_confirm_disabled()
+                    || dialog::confirm_autofill(&prompt_str, id);
+                if approved {
+                    let _ = std::io::stdout().write_all(password.as_bytes());
+                    if !password.ends_with('\n') {
+                        let _ = std::io::stdout().write_all(b"\n");
+                    }
+                    let _ = std::io::stdout().flush();
+                    drop(password);
+                    std::process::exit(0);
                 }
-                let _ = std::io::stdout().flush();
                 drop(password);
-                std::process::exit(0);
             }
         }
     }

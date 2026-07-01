@@ -1,7 +1,10 @@
+mod autofill;
 mod cleartext;
 mod confirm;
 mod host_key;
 mod password;
+
+pub use autofill::confirm_autofill;
 
 use crate::prompt::DisplayType;
 use objc2_app_kit::{NSAlert, NSImage};

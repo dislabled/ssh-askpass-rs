@@ -53,6 +53,12 @@ launchctl load ~/Library/LaunchAgents/com.github.dislabled.ssh-askpass-rs.plist
 - **Confirm dialogs** (`SSH_ASKPASS_PROMPT=confirm`) show Accept/Cancel.
 - **Unknown host key** dialogs show the fingerprint and Yes/No buttons.
 
+> [!WARNING]
+> As the function of this program is inherently unsafe (It can release stored credentials if you connect to a rogue server),
+> I have tried to find a solution to verify connected server vs request. I just cannot find a proper way to do this, without breaking functionality.
+> As a workaround, a confirmation window is added before releasing credentials, showing the connected server and what credentials are sought after.
+> On by default, and can be disabled by setting `SSH_ASKPASS_NO_CONFIRM=<nonempty>`
+
 ## License
 
 [GPL-3.0](LICENSE) + If it blows up your laptop, I am not responsible

@@ -22,6 +22,12 @@ pub struct ParsedPrompt {
     pub display_type: DisplayType,
     pub identifier: Option<String>,
     pub skip_keychain: bool,
+    /// Whether autofilling a stored credential for this prompt should be
+    /// confirmed by the user first. True only for reusable remote/account
+    /// passwords (SSH login, network PAM, git credential, git-lfs); false for
+    /// key passphrases and token PINs. Only consulted on the keychain
+    /// fast-path (when skip_keychain is false and a credential is found).
+    pub confirm_autofill: bool,
 }
 
 pub fn prompt_type_from_env() -> PromptType {
@@ -38,6 +44,7 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
             display_type: DisplayType::ConfirmCancel,
             identifier: None,
             skip_keychain: true,
+            confirm_autofill: false,
         };
     }
 
@@ -46,6 +53,7 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
             display_type: DisplayType::Confirm,
             identifier: None,
             skip_keychain: true,
+            confirm_autofill: false,
         };
     }
 
@@ -59,6 +67,7 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
             display_type: DisplayType::UnknownSshHost,
             identifier: None,
             skip_keychain: true,
+            confirm_autofill: false,
         };
     }
 
@@ -69,6 +78,7 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
                 display_type: DisplayType::Password,
                 identifier: Some(id),
                 skip_keychain: false,
+                confirm_autofill: true,
             };
         }
     }
@@ -80,6 +90,7 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
                 display_type: DisplayType::Password,
                 identifier: Some(id),
                 skip_keychain: false,
+                confirm_autofill: true,
             };
         }
     }
@@ -91,6 +102,7 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
                 display_type: DisplayType::Password,
                 identifier: Some(id),
                 skip_keychain: false,
+                confirm_autofill: true,
             };
         }
     }
@@ -102,6 +114,7 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
                 display_type: DisplayType::Password,
                 identifier: Some(id),
                 skip_keychain: false,
+                confirm_autofill: true,
             };
         }
     }
@@ -115,6 +128,7 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
             display_type: DisplayType::Password,
             identifier: None,
             skip_keychain: true,
+            confirm_autofill: false,
         };
     }
 
@@ -128,6 +142,7 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
             display_type: DisplayType::Password,
             identifier: id,
             skip_keychain: false,
+            confirm_autofill: false,
         };
     }
 
@@ -142,6 +157,7 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
             display_type: DisplayType::Password,
             identifier: Some(key),
             skip_keychain: false,
+            confirm_autofill: false,
         };
     }
 
@@ -156,6 +172,7 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
             display_type: DisplayType::Password,
             identifier: Some(key),
             skip_keychain: true,
+            confirm_autofill: false,
         };
     }
 
@@ -166,6 +183,7 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
             display_type: DisplayType::Pin,
             identifier: id,
             skip_keychain: false,
+            confirm_autofill: false,
         };
     }
 
@@ -180,6 +198,7 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
             display_type: DisplayType::Pin,
             identifier: Some(id),
             skip_keychain: true,
+            confirm_autofill: false,
         };
     }
 
@@ -190,6 +209,7 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
             display_type: DisplayType::Password,
             identifier: id,
             skip_keychain: false,
+            confirm_autofill: true,
         };
     }
 
@@ -200,6 +220,7 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
             display_type: DisplayType::Password,
             identifier: id,
             skip_keychain: false,
+            confirm_autofill: true,
         };
     }
 
@@ -209,6 +230,7 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
             display_type: DisplayType::ClearText,
             identifier: None,
             skip_keychain: true,
+            confirm_autofill: false,
         };
     }
 
@@ -218,6 +240,7 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
             display_type: DisplayType::ClearText,
             identifier: None,
             skip_keychain: true,
+            confirm_autofill: false,
         };
     }
 
@@ -228,6 +251,7 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
             display_type: DisplayType::ClearText,
             identifier: id,
             skip_keychain: true,
+            confirm_autofill: false,
         };
     }
 
@@ -238,6 +262,7 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
             display_type: DisplayType::ClearText,
             identifier: id,
             skip_keychain: true,
+            confirm_autofill: false,
         };
     }
 
@@ -247,6 +272,7 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
             display_type: DisplayType::Password,
             identifier: None,
             skip_keychain: true,
+            confirm_autofill: false,
         };
     }
 
@@ -266,6 +292,7 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
                         display_type: DisplayType::Password,
                         identifier: Some(inner.to_string()),
                         skip_keychain: false,
+                        confirm_autofill: true,
                     };
                 }
             }
@@ -278,6 +305,7 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
         display_type: DisplayType::Password,
         identifier: None,
         skip_keychain: true,
+        confirm_autofill: false,
     }
 }
 
