@@ -14,6 +14,27 @@ fn autofill_confirm_disabled() -> bool {
     std::env::var_os("SSH_ASKPASS_NO_CONFIRM").is_some_and(|v| !v.is_empty())
 }
 
+/// Frontend to present, selected via `SSH_ASKPASS_MODE`.
+enum Frontend {
+    /// Terminal when a tty exists, else GUI (default).
+    Auto,
+    /// Always the GUI dialogs.
+    Gui,
+    /// Require the terminal; error out when there's no tty.
+    Terminal,
+}
+
+fn frontend_from_env() -> Frontend {
+    match std::env::var("SSH_ASKPASS_MODE")
+        .map(|v| v.trim().to_ascii_lowercase())
+        .as_deref()
+    {
+        Ok("gui") => Frontend::Gui,
+        Ok("terminal") | Ok("inline") | Ok("tty") => Frontend::Terminal,
+        _ => Frontend::Auto,
+    }
+}
+
 fn main() {
     security::disable_core_dumps();
 
@@ -24,9 +45,22 @@ fn main() {
     let prompt_type = prompt_type_from_env();
     let parsed = parse_prompt(&prompt_str, &prompt_type);
 
-    // If there is  a controlling terminal, interact inline instead of popping a
-    // GUI window.
-    let mut tty = terminal::open();
+    // Terminal when a tty exists, else GUI. SSH_ASKPASS_MODE overrides this.
+    let frontend = frontend_from_env();
+    let mut tty = match frontend {
+        Frontend::Gui => None,
+        Frontend::Auto | Frontend::Terminal => terminal::open(),
+    };
+
+    // Strict terminal mode: error out rather than silently pop the GUI.
+    if matches!(frontend, Frontend::Terminal) && tty.is_none() {
+        eprintln!(
+            "ssh-askpass-rs: SSH_ASKPASS_MODE=terminal, but no controlling terminal \
+             (/dev/tty) is available"
+        );
+        security::sigint_parent();
+        std::process::exit(1);
+    }
 
     // Attempt keychain lookup
     if !parsed.skip_keychain {

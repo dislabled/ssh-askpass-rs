@@ -52,6 +52,9 @@ launchctl load ~/Library/LaunchAgents/com.github.dislabled.ssh-askpass-rs.plist
 I have so fixed on porting this from [ksshaskpass](https://invent.kde.org/plasma/ksshaskpass), and forgot that i could tune it to my liking.
 Started on the gui, but personally I dont see the popping a GUI from the terminal and back.
 There is now a inline dialog in the terminal instead. Since the GUI is already there, there is the option to choose.
+    - `SSH_ASKPASS_MODE=auto` inline terminal when a /dev/tty exists, else GUI (default)
+    - `SSH_ASKPASS_MODE=gui` Force AppKit/GUI dialogs
+    - `SSH_ASKPASS_MODE=terminal` strict inline, will error out and sigint shh when there is no TTY
 
 I put in some color to distinguish prompts from ssh vs ssh-askpass-rs. Should honor the standard `NO_COLOR` env var.
 
