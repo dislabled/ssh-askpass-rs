@@ -48,6 +48,13 @@ launchctl load ~/Library/LaunchAgents/com.github.dislabled.ssh-askpass-rs.plist
 
 `ssh-askpass-rs` is called automatically by OpenSSH when a passphrase or password is needed. You do not invoke it directly.
 
+
+I have so fixed on porting this from [ksshaskpass](https://invent.kde.org/plasma/ksshaskpass), and forgot that i could tune it to my liking.
+Started on the gui, but personally I dont see the popping a GUI from the terminal and back.
+There is now a inline dialog in the terminal instead. Since the GUI is already there, there is the option to choose.
+
+I put in some color to distinguish prompts from ssh vs ssh-askpass-rs. Should honor the standard `NO_COLOR` env var.
+
 - **Password dialogs** show a "Remember in Keychain" checkbox. If checked, the credential is stored and returned silently on future requests.
 - **Bad passphrase** prompts also offer the checkbox, letting you overwrite a stale Keychain entry.
 - **Confirm dialogs** (`SSH_ASKPASS_PROMPT=confirm`) show Accept/Cancel.
