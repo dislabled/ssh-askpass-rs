@@ -27,7 +27,10 @@ pub enum AutofillChoice {
 }
 
 /// Confirm inline before releasing a stored credential.
-pub fn confirm_autofill<T: Read + Write>(tty: &mut T, identifier: &str) -> AutofillChoice {
+pub fn confirm_autofill<T: Read + Write + RawInput>(
+    tty: &mut T,
+    identifier: &str,
+) -> AutofillChoice {
     let _ = write!(
         tty,
         "{}Send stored credential for '{identifier}'? [y]es / [n]o, type it / [c]ancel: ",
@@ -35,15 +38,24 @@ pub fn confirm_autofill<T: Read + Write>(tty: &mut T, identifier: &str) -> Autof
     );
     let _ = tty.flush();
 
-    match read_line(tty).as_deref().map(|s| s.trim()) {
-        // EOF (Ctrl-D): treat as cancel rather than silently proceeding.
-        None => AutofillChoice::Cancel,
-        Some(s) => match s.chars().next() {
-            Some('y') | Some('Y') => AutofillChoice::Send,
-            Some('c') | Some('C') => AutofillChoice::Cancel,
-            _ => AutofillChoice::Manual,
-        },
+    let _cbreak = tty.cbreak();
+    loop {
+        match read_byte(tty) {
+            // EOF (Ctrl-D): treat as cancel rather than silently proceeding.
+            None => return AutofillChoice::Cancel,
+            Some(b'y') | Some(b'Y') => return echo(tty, "y", AutofillChoice::Send),
+            Some(b'c') | Some(b'C') => return echo(tty, "c", AutofillChoice::Cancel),
+            Some(b'n') | Some(b'N') => return echo(tty, "n", AutofillChoice::Manual),
+            Some(b'\r') | Some(b'\n') => return echo(tty, "", AutofillChoice::Manual),
+            _ => continue,
+        }
     }
+}
+
+/// Echo the resolved answer (cbreak suppressed the keystroke) and return `value`.
+fn echo<T: Write, V>(tty: &mut T, shown: &str, value: V) -> V {
+    let _ = writeln!(tty, "{shown}");
+    value
 }
 
 /// Prompt on the terminal. Handles every `DisplayType` inline.
@@ -71,7 +83,7 @@ fn accepted_yes() -> DialogResult {
 }
 
 /// Accept/Cancel confirm dialog.
-fn confirm_prompt<T: Read + Write>(tty: &mut T, prompt: &str) -> DialogResult {
+fn confirm_prompt<T: Read + Write + RawInput>(tty: &mut T, prompt: &str) -> DialogResult {
     if prompt_yes_no(tty, prompt, false) {
         accepted_yes()
     } else {
@@ -89,7 +101,7 @@ fn confirm_cancel_prompt<T: Read + Write>(tty: &mut T, prompt: &str) -> DialogRe
 }
 
 /// Unknown-host-key warning.
-fn host_key_prompt<T: Read + Write>(tty: &mut T, prompt: &str) -> DialogResult {
+fn host_key_prompt<T: Read + Write + RawInput>(tty: &mut T, prompt: &str) -> DialogResult {
     let cleaned = prompt
         .replace("(yes/no/[fingerprint])", "")
         .replace("(yes/no)", "")
@@ -162,19 +174,25 @@ fn read_input(
     }
 }
 
-/// Ask a `[y/N]` / `[Y/n]` question. Empty input takes the default.
-fn prompt_yes_no<T: Read + Write>(tty: &mut T, question: &str, default_yes: bool) -> bool {
+/// Ask a `[y/N]` / `[Y/n]` question.
+fn prompt_yes_no<T: Read + Write + RawInput>(
+    tty: &mut T,
+    question: &str,
+    default_yes: bool,
+) -> bool {
     let hint = if default_yes { "[Y/n]" } else { "[y/N]" };
     let _ = write!(tty, "{}{question} {hint} ", prefix());
     let _ = tty.flush();
 
-    match read_line(tty) {
-        Some(line) => match line.trim().chars().next() {
-            Some('y') | Some('Y') => true,
-            Some('n') | Some('N') => false,
-            _ => default_yes,
-        },
-        None => default_yes,
+    let _cbreak = tty.cbreak();
+    loop {
+        match read_byte(tty) {
+            Some(b'y') | Some(b'Y') => return echo(tty, "y", true),
+            Some(b'n') | Some(b'N') => return echo(tty, "n", false),
+            Some(b'\r') | Some(b'\n') => return echo(tty, "", default_yes),
+            None => return default_yes,
+            _ => continue,
+        }
     }
 }
 
@@ -210,6 +228,68 @@ fn read_line<R: Read>(tty: &mut R) -> Option<Zeroizing<String>> {
         }
     };
     Some(Zeroizing::new(s))
+}
+
+/// Read a single byte. None on EOF/error.
+fn read_byte<R: Read>(tty: &mut R) -> Option<u8> {
+    let mut b = [0u8; 1];
+    loop {
+        match tty.read(&mut b) {
+            Ok(0) => return None,
+            Ok(_) => return Some(b[0]),
+            Err(ref e) if e.kind() == io::ErrorKind::Interrupted => continue,
+            Err(_) => return None,
+        }
+    }
+}
+
+/// A terminal that can enter single-key (cbreak) mode.
+pub(crate) trait RawInput {
+    fn cbreak(&self) -> Option<CbreakGuard> {
+        None
+    }
+}
+
+impl RawInput for File {
+    fn cbreak(&self) -> Option<CbreakGuard> {
+        CbreakGuard::enable(self.as_raw_fd())
+    }
+}
+
+/// Puts the terminal in single-key mode (ICANON + ECHO off)
+pub(crate) struct CbreakGuard {
+    fd: RawFd,
+    orig: libc::termios,
+}
+
+impl CbreakGuard {
+    fn enable(fd: RawFd) -> Option<Self> {
+        // SAFETY: tcgetattr fills a zeroed termios; tcsetattr applies a copy.
+        unsafe {
+            let mut term: libc::termios = std::mem::zeroed();
+            if libc::tcgetattr(fd, &mut term) != 0 {
+                return None;
+            }
+            let orig = term;
+            term.c_lflag &= !(libc::ICANON | libc::ECHO);
+            term.c_cc[libc::VMIN] = 1;
+            term.c_cc[libc::VTIME] = 0;
+            // TCSAFLUSH drops any type-ahead so a buffered key can't auto-answer.
+            if libc::tcsetattr(fd, libc::TCSAFLUSH, &term) != 0 {
+                return None;
+            }
+            Some(CbreakGuard { fd, orig })
+        }
+    }
+}
+
+impl Drop for CbreakGuard {
+    fn drop(&mut self) {
+        // SAFETY: restoring the exact termios we captured in enable().
+        unsafe {
+            libc::tcsetattr(self.fd, libc::TCSAFLUSH, &self.orig);
+        }
+    }
 }
 
 /// Make sure a password isnt printed when typed.
@@ -283,6 +363,9 @@ mod tests {
             Ok(())
         }
     }
+
+    // No real fd; cbreak() falls back to the no-op default.
+    impl RawInput for FakeTty {}
 
     fn secret_of(r: &DialogResult) -> Option<&str> {
         match r {
