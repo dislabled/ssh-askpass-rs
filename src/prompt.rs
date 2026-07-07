@@ -287,10 +287,10 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
             let inner = &prompt[1..pos];
             if inner.contains('@') {
                 let rest = &prompt[pos + 1..];
-                if rest.starts_with(" Password: ")
-                    || rest.starts_with(" password: ")
-                    || rest.starts_with("'s Password: ")
-                    || rest.starts_with("'s password: ")
+                if rest.starts_with(" Password:")
+                    || rest.starts_with(" password:")
+                    || rest.starts_with("'s Password:")
+                    || rest.starts_with("'s password:")
                 {
                     return ParsedPrompt {
                         display_type: DisplayType::Password,
@@ -304,7 +304,12 @@ pub fn parse_prompt(prompt: &str, prompt_type: &PromptType) -> ParsedPrompt {
     }
 
     // Fallback
-    eprintln!("ssh-askpass-rs: unrecognized prompt: {:?}", prompt);
+    let msg = format!("ssh-askpass-rs: unrecognized prompt: {:?}", prompt);
+    if env::var_os("NO_COLOR").is_some() {
+        eprintln!("{msg}");
+    } else {
+        eprintln!("\x1b[31m{msg}\x1b[0m");
+    }
     ParsedPrompt {
         display_type: DisplayType::Password,
         identifier: None,
