@@ -58,7 +58,7 @@ fn main() {
             "ssh-askpass-rs: SSH_ASKPASS_MODE=terminal, but no controlling terminal \
              (/dev/tty) is available"
         );
-        security::sigint_parent();
+        security::terminate_ssh();
         std::process::exit(1);
     }
 
@@ -100,7 +100,7 @@ fn main() {
                     // Abort so a wrong stored password can't burn ssh's retries.
                     AutofillChoice::Cancel => {
                         drop(password);
-                        security::sigint_parent();
+                        security::terminate_ssh();
                         std::process::exit(1);
                     }
                 }
@@ -150,7 +150,7 @@ fn main() {
             std::process::exit(0);
         }
         DialogResult::Cancelled => {
-            security::sigint_parent();
+            security::terminate_ssh();
             std::process::exit(1);
         }
     }

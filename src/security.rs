@@ -10,36 +10,21 @@ pub fn disable_core_dumps() {
     }
 }
 
-// Interrupt ssh on cancel so it doesn't keep re-prompting.
-pub fn sigint_parent() {
+// Terminale ssh on cancel so it doesn't keep re-prompting.
+pub fn terminate_ssh() {
     unsafe {
-        let fg = tty_foreground_pgrp();
-        let via_parent = {
-            let p = libc::getpgid(libc::getppid());
-            (p > 0).then_some(p)
-        };
+        let ppid = libc::getppid();
 
         if std::env::var_os("SSH_ASKPASS_DEBUG").is_some() {
             eprintln!(
-                "ssh-askpass-rs: cancel: pid={} ppid={} tty_fg_pgrp={fg:?} getpgid(ppid)={via_parent:?}",
+                "ssh-askpass-rs: cancel: pid={} ppid={ppid}",
                 libc::getpid(),
-                libc::getppid(),
             );
         }
 
-        if let Some(pgid) = fg.or(via_parent) {
-            libc::kill(-pgid, libc::SIGINT);
+        // ppid <= 1 means we've been orphaned; don't signal init.
+        if ppid > 1 {
+            libc::kill(ppid, libc::SIGTERM);
         }
     }
-}
-
-// Foreground process group of the controlling terminal, if we have one.
-unsafe fn tty_foreground_pgrp() -> Option<i32> {
-    let fd = libc::open(c"/dev/tty".as_ptr(), libc::O_RDONLY);
-    if fd < 0 {
-        return None;
-    }
-    let pg = libc::tcgetpgrp(fd);
-    libc::close(fd);
-    (pg > 0).then_some(pg)
 }
