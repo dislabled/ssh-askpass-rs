@@ -2,6 +2,7 @@
 
 use crate::dialog::DialogResult;
 use crate::prompt::DisplayType;
+use crate::store::SecretStore;
 use std::fs::{File, OpenOptions};
 use std::io::{self, Read, Write};
 use std::os::unix::io::{AsRawFd, RawFd};
@@ -61,13 +62,16 @@ fn echo<T: Write, V>(tty: &mut T, shown: &str, value: V) -> V {
 /// Prompt on the terminal. Handles every `DisplayType` inline.
 pub fn show(
     tty: &mut File,
+    store: &dyn SecretStore,
     display_type: &DisplayType,
     prompt: &str,
     identifier: Option<&str>,
 ) -> DialogResult {
     match display_type {
-        DisplayType::Password | DisplayType::Pin => read_input(tty, prompt, true, identifier),
-        DisplayType::ClearText => read_input(tty, prompt, false, identifier),
+        DisplayType::Password | DisplayType::Pin => {
+            read_input(tty, store, prompt, true, identifier)
+        }
+        DisplayType::ClearText => read_input(tty, store, prompt, false, identifier),
         DisplayType::Confirm => confirm_prompt(tty, prompt),
         DisplayType::ConfirmCancel => confirm_cancel_prompt(tty, prompt),
         DisplayType::UnknownSshHost => host_key_prompt(tty, prompt),
@@ -127,6 +131,7 @@ fn prefix() -> &'static str {
 
 fn read_input(
     tty: &mut File,
+    store: &dyn SecretStore,
     prompt: &str,
     secret_input: bool,
     identifier: Option<&str>,
@@ -158,7 +163,7 @@ fn read_input(
     let save_to_keychain = match identifier {
         Some(id) => {
             // Change wording based on if there is a stored secret.
-            let question = if crate::keychain::read(id).is_some() {
+            let question = if store.read(id).is_some() {
                 format!("Overwrite stored password for '{id}'?")
             } else {
                 format!("Save to keychain for '{id}'?")

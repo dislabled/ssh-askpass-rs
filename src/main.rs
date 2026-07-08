@@ -2,6 +2,7 @@ mod dialog;
 mod keychain;
 mod prompt;
 mod security;
+mod store;
 mod terminal;
 
 use dialog::DialogResult;
@@ -62,10 +63,12 @@ fn main() {
         std::process::exit(1);
     }
 
+    let store = store::default_store();
+
     // Attempt keychain lookup
     if !parsed.skip_keychain {
         if let Some(id) = &parsed.identifier {
-            if let Some(password) = keychain::read(id) {
+            if let Some(password) = store.read(id) {
                 use terminal::AutofillChoice;
 
                 // Gate reusable remote passwords behind a confirmation (unless
@@ -114,6 +117,7 @@ fn main() {
         .map(|t| {
             terminal::show(
                 t,
+                store.as_ref(),
                 &parsed.display_type,
                 &prompt_str,
                 parsed.identifier.as_deref(),
@@ -142,7 +146,7 @@ fn main() {
             // Store in keychain only if the user checked the checkbox
             if save_to_keychain {
                 if let Some(id) = &parsed.identifier {
-                    let _ = keychain::write(id, secret.as_bytes());
+                    let _ = store.write(id, secret.as_bytes());
                 }
             }
 
