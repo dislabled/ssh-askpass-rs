@@ -1,4 +1,5 @@
-use crate::dialog::{set_security_icon, DialogResult};
+use crate::dialog::set_security_icon;
+use crate::prompt::DialogResult;
 use crate::prompt::DisplayType;
 use crate::security::disable_core_dumps;
 use objc2_app_kit::{

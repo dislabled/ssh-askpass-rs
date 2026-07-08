@@ -1,7 +1,6 @@
 //! Terminal (inline) frontend.
 
-use crate::dialog::DialogResult;
-use crate::prompt::DisplayType;
+use crate::prompt::{DialogResult, DisplayType};
 use crate::store::SecretStore;
 use std::fs::{File, OpenOptions};
 use std::io::{self, Read, Write};

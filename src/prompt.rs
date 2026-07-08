@@ -1,4 +1,5 @@
 use std::env;
+use zeroize::Zeroizing;
 
 #[derive(Debug, PartialEq)]
 pub enum PromptType {
@@ -15,6 +16,15 @@ pub enum DisplayType {
     Confirm,
     ConfirmCancel,
     UnknownSshHost,
+}
+
+/// Outcome of a prompt, from either frontend.
+pub enum DialogResult {
+    Accepted {
+        secret: Zeroizing<String>,
+        save_to_keychain: bool,
+    },
+    Cancelled,
 }
 
 #[derive(Debug)]
