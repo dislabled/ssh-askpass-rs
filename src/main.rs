@@ -3,6 +3,8 @@ mod dialog;
 #[cfg(target_os = "macos")]
 mod keychain;
 mod prompt;
+#[cfg(target_os = "linux")]
+mod secret_service;
 mod security;
 mod store;
 mod terminal;

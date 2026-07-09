@@ -1,17 +1,27 @@
 # ssh-askpass-rs
 
-A macOS SSH askpass helper, inspired by [ksshaskpass](https://invent.kde.org/plasma/ksshaskpass).
+An SSH askpass helper, inspired by [ksshaskpass](https://invent.kde.org/plasma/ksshaskpass).
 
-Displays native macOS dialogs for SSH credential prompts and stores secrets in the macOS Keychain.
+On macOS it shows native dialogs and stores secrets in the Keychain.
+On Linux it runs inline in the terminal and stores secrets in your keyring over the freedesktop
+[Secret Service](https://specifications.freedesktop.org/secret-service-spec/) API (gnome-keyring, KDE's ksecretd/kwallet, KeePassXC — whatever provides it).
+
+> [!NOTE]
+> Linux support is a work in progress. It's terminal-only for now
 
 ## Requirements
 
+**macOS**
 - macOS 14 (Sonoma) or later
 - Apple Silicon or Intel Mac
 
+**Linux** (work in progress)
+- A running Secret Service provider (gnome-keyring, ksecretd/kwalletd, KeePassXC, …)
+- `libdbus-1`
+
 ## Installation
 
-### Homebrew (recommended)
+### Homebrew (macOS)
 
 ```sh
 brew tap dislabled/ssh-askpass-rs https://github.com/dislabled/ssh-askpass-rs
@@ -37,7 +47,7 @@ export SSH_ASKPASS=$(which ssh-askpass-rs)
 export SSH_ASKPASS_REQUIRE=force
 ```
 
-For system-wide use (applies to GUI apps and not just terminal sessions), install the provided LaunchAgent:
+For system-wide use (applies to GUI apps and not just terminal sessions), install the provided LaunchAgent: (macOS)
 
 ```sh
 cp contrib/com.github.dislabled.ssh-askpass-rs.plist ~/Library/LaunchAgents/
@@ -55,6 +65,7 @@ There is now a inline dialog in the terminal instead. Since the GUI is already t
     - `SSH_ASKPASS_MODE=auto` inline terminal when a /dev/tty exists, else GUI (default)
     - `SSH_ASKPASS_MODE=gui` Force AppKit/GUI dialogs
     - `SSH_ASKPASS_MODE=terminal` strict inline, will error out and sigint shh when there is no TTY
+Linux is terminal only for now
 
 I put in some color to distinguish prompts from ssh vs ssh-askpass-rs. Should honor the standard `NO_COLOR` env var.
 

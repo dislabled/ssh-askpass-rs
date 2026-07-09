@@ -17,17 +17,22 @@ pub fn default_store() -> Box<dyn SecretStore> {
     Box::new(crate::keychain::KeychainStore)
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(target_os = "linux")]
+pub fn default_store() -> Box<dyn SecretStore> {
+    Box::new(crate::secret_service::SecretServiceStore)
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
 pub fn default_store() -> Box<dyn SecretStore> {
     Box::new(NullStore)
 }
 
 /// Placeholder for platforms without a native keystore.
 /// Reads nothing; drops writes.
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
 pub struct NullStore;
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
 impl SecretStore for NullStore {
     fn read(&self, _id: &str) -> Option<Zeroizing<String>> {
         None
