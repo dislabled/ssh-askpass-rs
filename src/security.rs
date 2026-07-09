@@ -16,10 +16,7 @@ pub fn terminate_ssh() {
         let ppid = libc::getppid();
 
         if std::env::var_os("SSH_ASKPASS_DEBUG").is_some() {
-            eprintln!(
-                "ssh-askpass-rs: cancel: pid={} ppid={ppid}",
-                libc::getpid(),
-            );
+            eprintln!("ssh-askpass-rs: cancel: pid={} ppid={ppid}", libc::getpid(),);
         }
 
         // ppid <= 1 means we've been orphaned; don't signal init.
