@@ -163,7 +163,7 @@ fn main() {
     match result {
         DialogResult::Accepted {
             secret,
-            save_to_keychain,
+            save_secret,
         } => {
             // Write credential to stdout without creating an intermediate String copy
             let _ = std::io::stdout().write_all(secret.as_bytes());
@@ -173,7 +173,7 @@ fn main() {
             let _ = std::io::stdout().flush();
 
             // Store in keychain only if the user checked the checkbox
-            if save_to_keychain {
+            if save_secret {
                 if let Some(id) = &parsed.identifier {
                     let _ = store.write(id, secret.as_bytes());
                 }

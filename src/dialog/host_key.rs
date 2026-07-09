@@ -47,7 +47,7 @@ pub fn show(prompt: &str) -> DialogResult {
     if response == NSAlertFirstButtonReturn {
         DialogResult::Accepted {
             secret: Zeroizing::new("yes\n".to_string()),
-            save_to_keychain: false,
+            save_secret: false,
         }
     } else {
         DialogResult::Cancelled

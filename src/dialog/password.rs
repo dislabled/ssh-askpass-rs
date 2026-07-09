@@ -72,7 +72,7 @@ pub fn show(prompt: &str, _display_type: &DisplayType, identifier: Option<&str>)
         let s = value.to_string();
         drop(field);
 
-        let save_to_keychain = show_keychain_checkbox
+        let save_secret = show_keychain_checkbox
             && alert
                 .suppressionButton()
                 .map(|b| b.state() == NSControlStateValueOn)
@@ -80,7 +80,7 @@ pub fn show(prompt: &str, _display_type: &DisplayType, identifier: Option<&str>)
 
         DialogResult::Accepted {
             secret: Zeroizing::new(s),
-            save_to_keychain,
+            save_secret,
         }
     } else {
         drop(field);

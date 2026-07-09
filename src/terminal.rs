@@ -81,7 +81,7 @@ pub fn show(
 fn accepted_yes() -> DialogResult {
     DialogResult::Accepted {
         secret: Zeroizing::new("yes\n".to_string()),
-        save_to_keychain: false,
+        save_secret: false,
     }
 }
 
@@ -159,13 +159,13 @@ fn read_input(
         None => return DialogResult::Cancelled,
     };
 
-    let save_to_keychain = match identifier {
+    let save_secret = match identifier {
         Some(id) => {
             // Change wording based on if there is a stored secret.
             let question = if store.read(id).is_some() {
                 format!("Overwrite stored password for '{id}'?")
             } else {
-                format!("Save to keychain for '{id}'?")
+                format!("Save password for '{id}'?")
             };
             prompt_yes_no(tty, &question, false)
         }
@@ -174,7 +174,7 @@ fn read_input(
 
     DialogResult::Accepted {
         secret,
-        save_to_keychain,
+        save_secret,
     }
 }
 

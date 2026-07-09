@@ -22,7 +22,7 @@ pub enum DisplayType {
 pub enum DialogResult {
     Accepted {
         secret: Zeroizing<String>,
-        save_to_keychain: bool,
+        save_secret: bool,
     },
     Cancelled,
 }
