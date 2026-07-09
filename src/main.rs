@@ -42,8 +42,13 @@ fn frontend_from_env() -> Frontend {
 
 // GUI fallback, only when no controlling terminal. (macOS only)
 #[cfg(target_os = "macos")]
-fn gui_show(display_type: &DisplayType, prompt: &str, identifier: Option<&str>) -> DialogResult {
-    dialog::show(display_type, prompt, identifier)
+fn gui_show(
+    display_type: &DisplayType,
+    prompt: &str,
+    identifier: Option<&str>,
+    store: &dyn store::SecretStore,
+) -> DialogResult {
+    dialog::show(display_type, prompt, identifier, store)
 }
 
 #[cfg(target_os = "macos")]
@@ -56,7 +61,12 @@ fn gui_confirm_autofill(prompt: &str, id: &str) -> AutofillChoice {
 }
 
 #[cfg(not(target_os = "macos"))]
-fn gui_show(_display_type: &DisplayType, _prompt: &str, _identifier: Option<&str>) -> DialogResult {
+fn gui_show(
+    _display_type: &DisplayType,
+    _prompt: &str,
+    _identifier: Option<&str>,
+    _store: &dyn store::SecretStore,
+) -> DialogResult {
     no_gui()
 }
 
@@ -159,6 +169,7 @@ fn main() {
                 &parsed.display_type,
                 &prompt_str,
                 parsed.identifier.as_deref(),
+                store.as_ref(),
             )
         });
 

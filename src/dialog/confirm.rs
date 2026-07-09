@@ -2,7 +2,7 @@ use crate::dialog::set_security_icon;
 use crate::prompt::DialogResult;
 use crate::security::disable_core_dumps;
 use objc2_app_kit::{
-    NSAlert, NSAlertFirstButtonReturn, NSAlertStyle, NSApplication, NSApplicationActivationPolicy,
+    NSAlert, NSAlertSecondButtonReturn, NSAlertStyle, NSApplication, NSApplicationActivationPolicy,
 };
 use objc2_foundation::{MainThreadMarker, NSString};
 use zeroize::Zeroizing;
@@ -38,15 +38,19 @@ pub fn show(prompt: &str, cancel_only: bool) -> DialogResult {
         let ok_label = NSString::from_str("OK");
         alert.addButtonWithTitle(&ok_label);
     } else {
-        let accept_label = NSString::from_str("Accept");
-        alert.addButtonWithTitle(&accept_label);
-        let cancel_label = NSString::from_str("Cancel");
-        alert.addButtonWithTitle(&cancel_label);
+        // "No" is added first, so it's the Return-highlighted default: the safe
+        // answer wins a reflexive Enter, mirroring the terminal's [y/N]. Not
+        // titled "Cancel" — AppKit special-cases that title (binds it to Escape,
+        // never the Return default), which would leave no keyboard default.
+        let no_label = NSString::from_str("No");
+        alert.addButtonWithTitle(&no_label);
+        let yes_label = NSString::from_str("Yes");
+        alert.addButtonWithTitle(&yes_label);
     }
 
     let response = alert.runModal();
 
-    if !cancel_only && response == NSAlertFirstButtonReturn {
+    if !cancel_only && response == NSAlertSecondButtonReturn {
         DialogResult::Accepted {
             secret: Zeroizing::new("yes\n".to_string()),
             save_secret: false,

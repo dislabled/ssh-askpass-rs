@@ -8,7 +8,11 @@ use objc2_app_kit::{
 use objc2_foundation::{MainThreadMarker, NSRect, NSString};
 use zeroize::Zeroizing;
 
-pub fn show(prompt: &str, identifier: Option<&str>) -> DialogResult {
+pub fn show(
+    prompt: &str,
+    identifier: Option<&str>,
+    store: &dyn crate::store::SecretStore,
+) -> DialogResult {
     disable_core_dumps();
 
     let mtm = MainThreadMarker::new().unwrap();
@@ -49,9 +53,16 @@ pub fn show(prompt: &str, identifier: Option<&str>) -> DialogResult {
 
     let show_keychain_checkbox = identifier.is_some();
     if show_keychain_checkbox {
+        // Word the checkbox like the terminal's save prompt: "Overwrite" when an
+        // entry already exists, else "Remember".
+        let overwrite = identifier.is_some_and(|id| store.read(id).is_some());
         alert.setShowsSuppressionButton(true);
         if let Some(checkbox) = alert.suppressionButton() {
-            let label = NSString::from_str("Remember in Keychain");
+            let label = NSString::from_str(if overwrite {
+                "Overwrite Keychain entry"
+            } else {
+                "Remember in Keychain"
+            });
             checkbox.setTitle(&label);
         }
     }

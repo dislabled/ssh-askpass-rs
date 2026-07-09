@@ -2,7 +2,7 @@ use crate::dialog::set_security_icon;
 use crate::prompt::DialogResult;
 use crate::security::disable_core_dumps;
 use objc2_app_kit::{
-    NSAlert, NSAlertFirstButtonReturn, NSAlertStyle, NSApplication, NSApplicationActivationPolicy,
+    NSAlert, NSAlertSecondButtonReturn, NSAlertStyle, NSApplication, NSApplicationActivationPolicy,
 };
 use objc2_foundation::{MainThreadMarker, NSString};
 use zeroize::Zeroizing;
@@ -37,14 +37,16 @@ pub fn show(prompt: &str) -> DialogResult {
     alert.setInformativeText(&prompt_str);
     alert.setAlertStyle(NSAlertStyle::Warning);
 
-    let yes_label = NSString::from_str("Yes");
-    alert.addButtonWithTitle(&yes_label);
+    // "No" is added first, so it's the Return-highlighted default: a reflexive
+    // Enter must NOT accept an unknown host key (TOFU). Accepting takes a click.
     let no_label = NSString::from_str("No");
     alert.addButtonWithTitle(&no_label);
+    let yes_label = NSString::from_str("Yes");
+    alert.addButtonWithTitle(&yes_label);
 
     let response = alert.runModal();
 
-    if response == NSAlertFirstButtonReturn {
+    if response == NSAlertSecondButtonReturn {
         DialogResult::Accepted {
             secret: Zeroizing::new("yes\n".to_string()),
             save_secret: false,
