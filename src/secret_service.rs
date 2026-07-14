@@ -15,21 +15,25 @@ impl SecretServiceStore {
 }
 
 impl SecretStore for SecretServiceStore {
-    fn read(&self, id: &str) -> Option<Zeroizing<String>> {
+    fn read(&self, id: &str) -> Result<Option<Zeroizing<String>>, Box<dyn std::error::Error>> {
         // Dh keeps the secret encrypted in transit over the session bus.
-        let ss = SecretService::connect(EncryptionType::Dh).ok()?;
-        let found = ss.search_items(Self::attributes(id)).ok()?;
+        let ss = SecretService::connect(EncryptionType::Dh)?;
+        let found = ss.search_items(Self::attributes(id))?;
 
         // Prefer an already-unlocked match
-        let item = found
+        let item = match found
             .unlocked
             .into_iter()
             .next()
-            .or_else(|| found.locked.into_iter().next())?;
-        item.ensure_unlocked().ok()?;
+            .or_else(|| found.locked.into_iter().next())
+        {
+            Some(item) => item,
+            None => return Ok(None),
+        };
+        item.ensure_unlocked()?;
 
-        let bytes = item.get_secret().ok()?;
-        String::from_utf8(bytes).ok().map(Zeroizing::new)
+        let bytes = item.get_secret()?;
+        Ok(Some(Zeroizing::new(String::from_utf8(bytes)?)))
     }
 
     fn write(&self, id: &str, secret: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
@@ -60,7 +64,7 @@ mod tests {
         let store = SecretServiceStore;
         let id = "ssh-askpass-rs-selftest@test";
         store.write(id, b"test1234").expect("write");
-        let got = store.read(id).expect("read back");
+        let got = store.read(id).expect("read").expect("read back");
         assert_eq!(got.as_str(), "test1234");
 
         // Clean up

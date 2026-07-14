@@ -55,7 +55,7 @@ pub fn show(
     if show_keychain_checkbox {
         // Word the checkbox like the terminal's save prompt: "Overwrite" when an
         // entry already exists, else "Remember".
-        let overwrite = identifier.is_some_and(|id| store.read(id).is_some());
+        let overwrite = identifier.is_some_and(|id| matches!(store.read(id), Ok(Some(_))));
         alert.setShowsSuppressionButton(true);
         if let Some(checkbox) = alert.suppressionButton() {
             let label = NSString::from_str(if overwrite {

@@ -117,7 +117,12 @@ fn main() {
     // Attempt keychain lookup
     if !parsed.skip_keychain {
         if let Some(id) = &parsed.identifier {
-            if let Some(password) = store.read(id) {
+            let lookup = store.read(id).unwrap_or_else(|e| {
+                // Warn and fall through to manual entry.
+                eprintln!("ssh-askpass-rs: warning: secret store read failed: {e}");
+                None
+            });
+            if let Some(password) = lookup {
                 // Gate reusable remote passwords behind a confirmation (unless
                 // disabled system-wide via SSH_ASKPASS_NO_CONFIRM)
                 let choice = if !parsed.confirm_autofill || autofill_confirm_disabled() {
@@ -188,7 +193,9 @@ fn main() {
             // Store in keychain only if the user checked the checkbox
             if save_secret {
                 if let Some(id) = &parsed.identifier {
-                    let _ = store.write(id, secret.as_bytes());
+                    if let Err(e) = store.write(id, secret.as_bytes()) {
+                        eprintln!("ssh-askpass-rs: warning: failed to save password: {e}");
+                    }
                 }
             }
 

@@ -162,7 +162,7 @@ fn read_input(
     let save_secret = match identifier {
         Some(id) => {
             // Change wording based on if there is a stored secret.
-            let question = if store.read(id).is_some() {
+            let question = if matches!(store.read(id), Ok(Some(_))) {
                 format!("Overwrite stored password for '{id}'?")
             } else {
                 format!("Save password for '{id}'?")

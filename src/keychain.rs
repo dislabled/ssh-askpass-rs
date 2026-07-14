@@ -6,15 +6,21 @@ use zeroize::Zeroizing;
 
 const SERVICE: &str = "ssh-askpass-rs";
 
+/// `errSecItemNotFound`: absence of an item, as opposed to a real failure.
+const ERR_SEC_ITEM_NOT_FOUND: i32 = -25300;
+
 /// macOS Keychain backend.
 pub struct KeychainStore;
 
 impl SecretStore for KeychainStore {
-    fn read(&self, identifier: &str) -> Option<Zeroizing<String>> {
-        if let Ok(bytes) = get_generic_password(SERVICE, identifier) {
-            if let Ok(s) = String::from_utf8(bytes) {
-                return Some(Zeroizing::new(s));
-            }
+    fn read(
+        &self,
+        identifier: &str,
+    ) -> Result<Option<Zeroizing<String>>, Box<dyn std::error::Error>> {
+        match get_generic_password(SERVICE, identifier) {
+            Ok(bytes) => return Ok(Some(Zeroizing::new(String::from_utf8(bytes)?))),
+            Err(e) if e.code() == ERR_SEC_ITEM_NOT_FOUND => {}
+            Err(e) => return Err(e.into()),
         }
 
         // Legacy key migrations
@@ -31,12 +37,12 @@ impl SecretStore for KeychainStore {
                     // Migrate: write under correct key, delete legacy
                     let _ = set_generic_password(SERVICE, identifier, password.as_bytes());
                     let _ = delete_generic_password(SERVICE, legacy_key.as_str());
-                    return Some(password);
+                    return Ok(Some(password));
                 }
             }
         }
 
-        None
+        Ok(None)
     }
 
     fn write(&self, identifier: &str, password: &[u8]) -> Result<(), Box<dyn std::error::Error>> {

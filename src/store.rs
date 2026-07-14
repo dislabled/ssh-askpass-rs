@@ -4,8 +4,9 @@ use zeroize::Zeroizing;
 
 /// A backend that stores ssh credentials keyed by an identifier string.
 pub trait SecretStore {
-    /// Return the stored secret for `id`, if any.
-    fn read(&self, id: &str) -> Option<Zeroizing<String>>;
+    /// Return the stored secret for `id`. `Ok(None)` means nothing is
+    /// stored; `Err` means the backend itself failed
+    fn read(&self, id: &str) -> Result<Option<Zeroizing<String>>, Box<dyn std::error::Error>>;
 
     /// Store `secret` under `id`.
     fn write(&self, id: &str, secret: &[u8]) -> Result<(), Box<dyn std::error::Error>>;
@@ -34,8 +35,8 @@ pub struct NullStore;
 
 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
 impl SecretStore for NullStore {
-    fn read(&self, _id: &str) -> Option<Zeroizing<String>> {
-        None
+    fn read(&self, _id: &str) -> Result<Option<Zeroizing<String>>, Box<dyn std::error::Error>> {
+        Ok(None)
     }
 
     fn write(&self, _id: &str, _secret: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
