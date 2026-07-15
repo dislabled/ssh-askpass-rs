@@ -1,17 +1,15 @@
-use crate::dialog::set_security_icon;
+use super::set_security_icon;
 use crate::prompt::DialogResult;
-use crate::prompt::DisplayType;
 use crate::security::disable_core_dumps;
 use objc2_app_kit::{
     NSAlert, NSAlertFirstButtonReturn, NSAlertStyle, NSApplication, NSApplicationActivationPolicy,
-    NSControlStateValueOn, NSSecureTextField,
+    NSControlStateValueOn, NSTextField,
 };
 use objc2_foundation::{MainThreadMarker, NSRect, NSString};
 use zeroize::Zeroizing;
 
 pub fn show(
     prompt: &str,
-    _display_type: &DisplayType,
     identifier: Option<&str>,
     store: &dyn crate::store::SecretStore,
 ) -> DialogResult {
@@ -30,7 +28,7 @@ pub fn show(
 
     let alert = NSAlert::new(mtm);
     set_security_icon(&alert);
-    let title = NSString::from_str("Enter SSH Credentials");
+    let title = NSString::from_str("SSH");
     alert.setMessageText(&title);
 
     let prompt_str = NSString::from_str(prompt);
@@ -43,7 +41,7 @@ pub fn show(
             height: 24.0,
         },
     };
-    let field = NSSecureTextField::initWithFrame(mtm.alloc(), frame);
+    let field = NSTextField::initWithFrame(mtm.alloc(), frame);
 
     let ok_label = NSString::from_str("OK");
     alert.addButtonWithTitle(&ok_label);
@@ -51,10 +49,8 @@ pub fn show(
     alert.addButtonWithTitle(&cancel_label);
 
     alert.setAccessoryView(Some(&field));
-    alert.setAlertStyle(NSAlertStyle::Warning);
+    alert.setAlertStyle(NSAlertStyle::Informational);
 
-    // Show the checkbox whenever we have an identifier — even on retry prompts
-    // (skip_keychain=true) so the user can overwrite a stale keychain entry.
     let show_keychain_checkbox = identifier.is_some();
     if show_keychain_checkbox {
         // Word the checkbox like the terminal's save prompt: "Overwrite" when an

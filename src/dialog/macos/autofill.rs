@@ -1,4 +1,4 @@
-use crate::dialog::set_security_icon;
+use super::set_security_icon;
 use crate::security::disable_core_dumps;
 use objc2_app_kit::{
     NSAlert, NSAlertSecondButtonReturn, NSAlertStyle, NSApplication, NSApplicationActivationPolicy,

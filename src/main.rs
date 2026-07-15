@@ -1,4 +1,3 @@
-#[cfg(target_os = "macos")]
 mod dialog;
 #[cfg(target_os = "macos")]
 mod keychain;
