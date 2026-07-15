@@ -10,6 +10,11 @@ pub trait SecretStore {
 
     /// Store `secret` under `id`.
     fn write(&self, id: &str, secret: &[u8]) -> Result<(), Box<dyn std::error::Error>>;
+
+    /// Is there a secret stored under `id`? Only used for prompt wording
+    fn exists(&self, id: &str) -> bool {
+        matches!(self.read(id), Ok(Some(_)))
+    }
 }
 
 /// The active store.
@@ -20,7 +25,7 @@ pub fn default_store() -> Box<dyn SecretStore> {
 
 #[cfg(target_os = "linux")]
 pub fn default_store() -> Box<dyn SecretStore> {
-    Box::new(crate::secret_service::SecretServiceStore)
+    Box::new(crate::secret_service::SecretServiceStore::default())
 }
 
 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
