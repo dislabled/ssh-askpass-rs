@@ -27,6 +27,16 @@ pub enum DialogResult {
     Cancelled,
 }
 
+impl DialogResult {
+    /// The "yes" answer ssh expects for confirm / host-key acceptances.
+    pub fn yes() -> Self {
+        DialogResult::Accepted {
+            secret: Zeroizing::new("yes\n".to_string()),
+            save_secret: false,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct ParsedPrompt {
     pub display_type: DisplayType,

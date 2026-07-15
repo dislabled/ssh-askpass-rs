@@ -77,18 +77,10 @@ pub fn show(
     }
 }
 
-/// The "yes" answer ssh expects for confirm / host-key acceptances.
-fn accepted_yes() -> DialogResult {
-    DialogResult::Accepted {
-        secret: Zeroizing::new("yes\n".to_string()),
-        save_secret: false,
-    }
-}
-
 /// Accept/Cancel confirm dialog.
 fn confirm_prompt<T: Read + Write + RawInput>(tty: &mut T, prompt: &str) -> DialogResult {
     if prompt_yes_no(tty, prompt, false) {
-        accepted_yes()
+        DialogResult::yes()
     } else {
         DialogResult::Cancelled
     }
@@ -113,7 +105,7 @@ fn host_key_prompt<T: Read + Write + RawInput>(tty: &mut T, prompt: &str) -> Dia
         .to_string();
 
     if prompt_yes_no(tty, &cleaned, false) {
-        accepted_yes()
+        DialogResult::yes()
     } else {
         DialogResult::Cancelled
     }

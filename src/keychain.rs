@@ -1,10 +1,8 @@
-use crate::store::SecretStore;
+use crate::store::{SecretStore, SERVICE};
 use security_framework::passwords::{
     delete_generic_password, get_generic_password, set_generic_password,
 };
 use zeroize::Zeroizing;
-
-const SERVICE: &str = "ssh-askpass-rs";
 
 /// `errSecItemNotFound`: absence of an item, as opposed to a real failure.
 const ERR_SEC_ITEM_NOT_FOUND: i32 = -25300;

@@ -5,7 +5,6 @@ use objc2_app_kit::{
     NSAlert, NSAlertSecondButtonReturn, NSAlertStyle, NSApplication, NSApplicationActivationPolicy,
 };
 use objc2_foundation::{MainThreadMarker, NSString};
-use zeroize::Zeroizing;
 
 pub fn show(prompt: &str, cancel_only: bool) -> DialogResult {
     disable_core_dumps();
@@ -51,10 +50,7 @@ pub fn show(prompt: &str, cancel_only: bool) -> DialogResult {
     let response = alert.runModal();
 
     if !cancel_only && response == NSAlertSecondButtonReturn {
-        DialogResult::Accepted {
-            secret: Zeroizing::new("yes\n".to_string()),
-            save_secret: false,
-        }
+        DialogResult::yes()
     } else {
         DialogResult::Cancelled
     }

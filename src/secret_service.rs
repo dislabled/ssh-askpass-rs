@@ -1,10 +1,8 @@
-use crate::store::SecretStore;
+use crate::store::{SecretStore, SERVICE};
 use dbus_secret_service::{EncryptionType, SecretService};
 use std::cell::OnceCell;
 use std::collections::HashMap;
 use zeroize::Zeroizing;
-
-const SERVICE: &str = "ssh-askpass-rs";
 
 /// Freedesktop Secret Service backend (gnome-keyring, kwallet, ...).
 #[derive(Default)]
