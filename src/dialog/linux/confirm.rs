@@ -14,8 +14,9 @@ slint::slint! {
 
         title: "SSH";
         width: 380px;
+        height: layout.preferred-height;
 
-        VerticalLayout {
+        layout := VerticalLayout {
             padding: 16px;
             spacing: 12px;
 

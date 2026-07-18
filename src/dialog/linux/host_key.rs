@@ -13,8 +13,9 @@ slint::slint! {
 
         title: "Unknown SSH Host Key";
         width: 420px;
+        height: layout.preferred-height;
 
-        VerticalLayout {
+        layout := VerticalLayout {
             padding: 16px;
             spacing: 12px;
 
