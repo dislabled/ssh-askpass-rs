@@ -32,3 +32,4 @@ security-framework = "3"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 dbus-secret-service = { version = "4", features = ["crypto-rust"] }
+slint = "1.17"

@@ -2,12 +2,10 @@
 
 An SSH askpass helper, inspired by [ksshaskpass](https://invent.kde.org/plasma/ksshaskpass).
 
-On macOS it shows native dialogs and stores secrets in the Keychain.
-On Linux it runs inline in the terminal and stores secrets in your keyring over the freedesktop
+On macOS it shows native AppKit dialogs and stores secrets in the Keychain.
+On Linux it shows GUI dialogs (built with [Slint](https://slint.dev/)) or runs inline in the terminal, and stores
+secrets in your keyring over the freedesktop
 [Secret Service](https://specifications.freedesktop.org/secret-service-spec/) API (gnome-keyring, KDE's ksecretd/kwallet, KeePassXC — whatever provides it).
-
-> [!NOTE]
-> Linux support is a work in progress. It's terminal-only for now
 
 ## Requirements
 
@@ -15,9 +13,10 @@ On Linux it runs inline in the terminal and stores secrets in your keyring over 
 - macOS 14 (Sonoma) or later
 - Apple Silicon or Intel Mac
 
-**Linux** (work in progress)
+**Linux**
 - A running Secret Service provider (gnome-keyring, ksecretd/kwalletd, KeePassXC, …)
 - `libdbus-1`
+- A Wayland or X11 session (for GUI dialogs)
 
 ## Installation
 
@@ -63,14 +62,13 @@ I have so fixed on porting this from [ksshaskpass](https://invent.kde.org/plasma
 Started on the gui, but personally I dont see the popping a GUI from the terminal and back.
 There is now a inline dialog in the terminal instead. Since the GUI is already there, there is the option to choose.
     - `SSH_ASKPASS_MODE=auto` inline terminal when a /dev/tty exists, else GUI (default)
-    - `SSH_ASKPASS_MODE=gui` Force AppKit/GUI dialogs
+    - `SSH_ASKPASS_MODE=gui` Force GUI dialogs (AppKit on macOS, Slint on Linux)
     - `SSH_ASKPASS_MODE=terminal` strict inline, will error out and sigint shh when there is no TTY
-Linux is terminal only for now
 
 I put in some color to distinguish prompts from ssh vs ssh-askpass-rs. Should honor the standard `NO_COLOR` env var.
 
-- **Password dialogs** show a "Remember in Keychain" checkbox. If checked, the credential is stored and returned silently on future requests.
-- **Bad passphrase** prompts also offer the checkbox, letting you overwrite a stale Keychain entry.
+- **Password dialogs** show a "Remember in Keychain/keyring" checkbox. If checked, the credential is stored and returned silently on future requests.
+- **Bad passphrase** prompts also offer the checkbox, letting you overwrite a stale Keychain/keyring entry.
 - **Confirm dialogs** (`SSH_ASKPASS_PROMPT=confirm`) show Accept/Cancel.
 - **Unknown host key** dialogs show the fingerprint and Yes/No buttons.
 

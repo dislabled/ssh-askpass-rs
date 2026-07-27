@@ -39,8 +39,8 @@ fn frontend_from_env() -> Frontend {
     }
 }
 
-// GUI fallback, only when no controlling terminal. (macOS only)
-#[cfg(target_os = "macos")]
+// GUI fallback, when no controlling terminal.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 fn gui_show(
     display_type: &DisplayType,
     prompt: &str,
@@ -50,7 +50,7 @@ fn gui_show(
     dialog::show(display_type, prompt, identifier, store)
 }
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 fn gui_confirm_autofill(prompt: &str, id: &str) -> AutofillChoice {
     if dialog::confirm_autofill(prompt, id) {
         AutofillChoice::Send
@@ -59,7 +59,7 @@ fn gui_confirm_autofill(prompt: &str, id: &str) -> AutofillChoice {
     }
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
 fn gui_show(
     _display_type: &DisplayType,
     _prompt: &str,
@@ -69,12 +69,12 @@ fn gui_show(
     no_gui()
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
 fn gui_confirm_autofill(_prompt: &str, _id: &str) -> AutofillChoice {
     no_gui()
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
 fn no_gui() -> ! {
     eprintln!(
         "ssh-askpass-rs: no controlling terminal (/dev/tty) available and no GUI \
