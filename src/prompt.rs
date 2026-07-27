@@ -359,3 +359,332 @@ fn extract_double_quoted(s: &str) -> Option<String> {
         None
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Parse as an Entry prompt and assert every field of the result.
+    fn check(prompt: &str, dt: DisplayType, id: Option<&str>, skip: bool, confirm: bool) {
+        let r = parse_prompt(prompt, &PromptType::Entry);
+        assert_eq!(r.display_type, dt, "display_type for {prompt:?}");
+        assert_eq!(r.identifier.as_deref(), id, "identifier for {prompt:?}");
+        assert_eq!(r.skip_keychain, skip, "skip_keychain for {prompt:?}");
+        assert_eq!(
+            r.confirm_autofill, confirm,
+            "confirm_autofill for {prompt:?}"
+        );
+    }
+
+    // PromptType shortcuts (don't depend on the prompt string)
+
+    #[test]
+    fn prompt_type_none_is_confirm_cancel() {
+        let r = parse_prompt("anything", &PromptType::None);
+        assert_eq!(r.display_type, DisplayType::ConfirmCancel);
+        assert_eq!(r.identifier, None);
+        assert!(r.skip_keychain);
+        assert!(!r.confirm_autofill);
+    }
+
+    #[test]
+    fn prompt_type_confirm_is_confirm() {
+        let r = parse_prompt("anything", &PromptType::Confirm);
+        assert_eq!(r.display_type, DisplayType::Confirm);
+        assert_eq!(r.identifier, None);
+        assert!(r.skip_keychain);
+        assert!(!r.confirm_autofill);
+    }
+
+    // Remote password auth (the four @ forms), keychain + confirm
+
+    #[test]
+    fn remote_password_openssh() {
+        check(
+            "alice@server's password: ",
+            DisplayType::Password,
+            Some("alice@server"),
+            false,
+            true,
+        );
+    }
+
+    #[test]
+    fn remote_password_pam_capital() {
+        check(
+            "bob@host's Password: ",
+            DisplayType::Password,
+            Some("bob@host"),
+            false,
+            true,
+        );
+    }
+
+    #[test]
+    fn remote_password_pam_space_lower() {
+        check(
+            "admin@box password: ",
+            DisplayType::Password,
+            Some("admin@box"),
+            false,
+            true,
+        );
+    }
+
+    #[test]
+    fn remote_password_pam_space_capital() {
+        check(
+            "admin@box Password: ",
+            DisplayType::Password,
+            Some("admin@box"),
+            false,
+            true,
+        );
+    }
+
+    // Password change: no identifier, skip keychain
+
+    #[test]
+    fn old_password_change() {
+        check(
+            "Enter alice's old password: ",
+            DisplayType::Password,
+            None,
+            true,
+            false,
+        );
+    }
+
+    #[test]
+    fn new_password_change_retype() {
+        check(
+            "Retype alice's new password: ",
+            DisplayType::Password,
+            None,
+            true,
+            false,
+        );
+    }
+
+    // Key passphrases: keychain, but never auto-confirm
+
+    #[test]
+    fn passphrase_single_quoted() {
+        check(
+            "Enter passphrase for '/home/u/.ssh/id_ed25519': ",
+            DisplayType::Password,
+            Some("/home/u/.ssh/id_ed25519"),
+            false,
+            false,
+        );
+    }
+
+    #[test]
+    fn passphrase_git_key_variant() {
+        check(
+            "Enter passphrase for key '/home/u/.ssh/id_rsa': ",
+            DisplayType::Password,
+            Some("/home/u/.ssh/id_rsa"),
+            false,
+            false,
+        );
+    }
+
+    #[test]
+    fn passphrase_legacy_rsa_key_variant() {
+        // Legacy/typed OpenSSH phrasing ksshaskpass handles via "for( RSA)? key".
+        check(
+            "Enter passphrase for RSA key '/home/u/.ssh/id_rsa': ",
+            DisplayType::Password,
+            Some("/home/u/.ssh/id_rsa"),
+            false,
+            false,
+        );
+    }
+
+    #[test]
+    fn passphrase_unquoted() {
+        check(
+            "Enter passphrase for /home/u/.ssh/id_rsa: ",
+            DisplayType::Password,
+            Some("/home/u/.ssh/id_rsa"),
+            false,
+            false,
+        );
+    }
+
+    #[test]
+    fn passphrase_unquoted_strips_confirm_each_use() {
+        check(
+            "Enter passphrase for /home/u/.ssh/id_rsa (will confirm each use): ",
+            DisplayType::Password,
+            Some("/home/u/.ssh/id_rsa"),
+            false,
+            false,
+        );
+    }
+
+    #[test]
+    fn bad_passphrase_keeps_id_but_skips_keychain() {
+        check(
+            "Bad passphrase, try again for /home/u/.ssh/id_rsa: ",
+            DisplayType::Password,
+            Some("/home/u/.ssh/id_rsa"),
+            true,
+            false,
+        );
+    }
+
+    // PINs
+
+    #[test]
+    fn pin_token_single_quoted() {
+        check(
+            "Enter PIN for 'PIV Card': ",
+            DisplayType::Pin,
+            Some("PIV Card"),
+            false,
+            false,
+        );
+    }
+
+    #[test]
+    fn pin_ssh_agent_key_hashes_identifier() {
+        // The ssh-agent key PIN uses an opaque hashed identifier and skips keychain.
+        let r = parse_prompt(
+            "Enter PIN for key /home/u/.ssh/id_ecdsa: ",
+            &PromptType::Entry,
+        );
+        assert_eq!(r.display_type, DisplayType::Pin);
+        assert!(r.skip_keychain);
+        assert!(!r.confirm_autofill);
+        assert!(r.identifier.as_deref().unwrap().starts_with("PIN:"));
+    }
+
+    // git credential / git-lfs
+
+    #[test]
+    fn git_credential_password() {
+        check(
+            "Password for 'https://github.com': ",
+            DisplayType::Password,
+            Some("https://github.com"),
+            false,
+            true,
+        );
+    }
+
+    #[test]
+    fn git_lfs_password_double_quoted() {
+        check(
+            "Password for \"https://github.com\"",
+            DisplayType::Password,
+            Some("https://github.com"),
+            false,
+            true,
+        );
+    }
+
+    #[test]
+    fn git_credential_username() {
+        check(
+            "Username for 'https://github.com': ",
+            DisplayType::ClearText,
+            Some("https://github.com"),
+            true,
+            false,
+        );
+    }
+
+    #[test]
+    fn git_lfs_username_double_quoted() {
+        check(
+            "Username for \"https://github.com\"",
+            DisplayType::ClearText,
+            Some("https://github.com"),
+            true,
+            false,
+        );
+    }
+
+    // Bare / clear-text prompts
+
+    #[test]
+    fn verification_code() {
+        check(
+            "Verification code: ",
+            DisplayType::ClearText,
+            None,
+            true,
+            false,
+        );
+    }
+
+    #[test]
+    fn bare_username() {
+        check("Username: ", DisplayType::ClearText, None, true, false);
+    }
+
+    #[test]
+    fn bare_password() {
+        check("Password: ", DisplayType::Password, None, true, false);
+    }
+
+    // Network-equipment PAM: "(user@host) Password:"
+
+    #[test]
+    fn network_pam_with_trailing_space() {
+        check(
+            "(admin@switch) Password: ",
+            DisplayType::Password,
+            Some("admin@switch"),
+            false,
+            true,
+        );
+    }
+
+    #[test]
+    fn network_pam_without_trailing_space() {
+        check(
+            "(administrator@test.example.com) Password:",
+            DisplayType::Password,
+            Some("administrator@test.example.com"),
+            false,
+            true,
+        );
+    }
+
+    #[test]
+    fn network_pam_apostrophe_lowercase_variant() {
+        check(
+            "(admin@switch)'s password: ",
+            DisplayType::Password,
+            Some("admin@switch"),
+            false,
+            true,
+        );
+    }
+
+    // Unknown host key
+
+    #[test]
+    fn unknown_host_key() {
+        let prompt = "The authenticity of host 'example.com (1.2.3.4)' can't be established.\n\
+                      ED25519 key fingerprint is SHA256:abc123.\n\
+                      Are you sure you want to continue connecting (yes/no/[fingerprint])? ";
+        check(prompt, DisplayType::UnknownSshHost, None, true, false);
+    }
+
+    // Fallback
+
+    #[test]
+    fn unrecognized_falls_back_to_password_no_keychain() {
+        check(
+            "Some prompt we do not recognize",
+            DisplayType::Password,
+            None,
+            true,
+            false,
+        );
+    }
+}
