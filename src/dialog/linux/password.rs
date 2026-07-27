@@ -19,6 +19,7 @@ slint::slint! {
         title: "Enter SSH Credentials";
         width: 380px;
         height: layout.preferred-height;
+        forward-focus: input;
 
         layout := VerticalLayout {
             padding: 16px;
@@ -29,7 +30,7 @@ slint::slint! {
                 wrap: word-wrap;
             }
 
-            LineEdit {
+            input := LineEdit {
                 input-type: password;
                 text <=> value;
                 height: 32px;

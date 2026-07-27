@@ -13,6 +13,7 @@ slint::slint! {
         title: "Send stored credential?";
         width: 420px;
         height: layout.preferred-height;
+        forward-focus: dont-send-button;
 
         layout := VerticalLayout {
             padding: 16px;
@@ -27,8 +28,8 @@ slint::slint! {
                 alignment: end;
                 spacing: 8px;
 
-                // Default (highlighted)
-                Button {
+                // Default, and receives initial keyboard focus
+                dont-send-button := Button {
                     text: "Don't Send";
                     primary: true;
                     clicked => { dont-send(); }

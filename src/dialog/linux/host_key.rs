@@ -14,6 +14,7 @@ slint::slint! {
         title: "Unknown SSH Host Key";
         width: 420px;
         height: layout.preferred-height;
+        forward-focus: no-button;
 
         layout := VerticalLayout {
             padding: 16px;
@@ -28,8 +29,8 @@ slint::slint! {
                 alignment: end;
                 spacing: 8px;
 
-                // Default
-                Button {
+                // Default, and receives initial keyboard focus
+                no-button := Button {
                     text: "No";
                     primary: true;
                     clicked => { no(); }
