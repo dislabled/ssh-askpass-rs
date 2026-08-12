@@ -18,6 +18,23 @@ fn autofill_confirm_disabled() -> bool {
     std::env::var_os("SSH_ASKPASS_NO_CONFIRM").is_some_and(|v| !v.is_empty())
 }
 
+/// Write the credential newline-terminated, without an intermediate String copy.
+/// Errors are the caller's to handle: ssh reads the answer from a pipe, and a
+/// failed write means it never arrives.
+fn write_secret<W: Write>(out: &mut W, secret: &str) -> std::io::Result<()> {
+    out.write_all(secret.as_bytes())?;
+    if !secret.ends_with('\n') {
+        out.write_all(b"\n")?;
+    }
+    out.flush()
+}
+
+/// Deliver the credential to ssh on stdout.
+fn deliver(secret: &str) -> std::io::Result<()> {
+    let stdout = std::io::stdout();
+    write_secret(&mut stdout.lock(), secret)
+}
+
 /// Frontend to present, selected via `SSH_ASKPASS_MODE`.
 enum Frontend {
     /// Terminal when a tty exists, else GUI (default).
@@ -135,12 +152,12 @@ fn main() {
 
                 match choice {
                     AutofillChoice::Send => {
-                        let _ = std::io::stdout().write_all(password.as_bytes());
-                        if !password.ends_with('\n') {
-                            let _ = std::io::stdout().write_all(b"\n");
-                        }
-                        let _ = std::io::stdout().flush();
+                        let delivered = deliver(&password);
                         drop(password);
+                        if let Err(e) = delivered {
+                            eprintln!("ssh-askpass-rs: failed to deliver credential: {e}");
+                            std::process::exit(1);
+                        }
                         std::process::exit(0);
                     }
                     // Fall through to the manual entry prompt below.
@@ -182,12 +199,11 @@ fn main() {
             secret,
             save_secret,
         } => {
-            // Write credential to stdout without creating an intermediate String copy
-            let _ = std::io::stdout().write_all(secret.as_bytes());
-            if !secret.ends_with('\n') {
-                let _ = std::io::stdout().write_all(b"\n");
+            if let Err(e) = deliver(&secret) {
+                eprintln!("ssh-askpass-rs: failed to deliver credential: {e}");
+                drop(secret);
+                std::process::exit(1);
             }
-            let _ = std::io::stdout().flush();
 
             // Store in keychain only if the user checked the checkbox
             if save_secret {
@@ -205,5 +221,50 @@ fn main() {
             security::terminate_ssh();
             std::process::exit(1);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::write_secret;
+    use std::io::{Error, ErrorKind, Write};
+
+    /// Fails every write, like a stdout pipe whose reader has gone away.
+    struct BrokenPipe;
+
+    impl Write for BrokenPipe {
+        fn write(&mut self, _buf: &[u8]) -> std::io::Result<usize> {
+            Err(Error::new(ErrorKind::BrokenPipe, "broken pipe"))
+        }
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn appends_newline() {
+        let mut out = Vec::new();
+        write_secret(&mut out, "hunter2").unwrap();
+        assert_eq!(out, b"hunter2\n");
+    }
+
+    #[test]
+    fn does_not_double_terminate() {
+        let mut out = Vec::new();
+        write_secret(&mut out, "hunter2\n").unwrap();
+        assert_eq!(out, b"hunter2\n");
+    }
+
+    #[test]
+    fn empty_secret_still_terminated() {
+        let mut out = Vec::new();
+        write_secret(&mut out, "").unwrap();
+        assert_eq!(out, b"\n");
+    }
+
+    #[test]
+    fn write_failure_is_reported() {
+        let err = write_secret(&mut BrokenPipe, "hunter2").unwrap_err();
+        assert_eq!(err.kind(), ErrorKind::BrokenPipe);
     }
 }
