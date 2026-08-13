@@ -1,10 +1,10 @@
 class SshAskpassRs < Formula
   desc "macOS SSH askpass helper with native dialogs and Keychain integration"
   homepage "https://github.com/dislabled/ssh-askpass-rs"
-  url "https://github.com/dislabled/ssh-askpass-rs/releases/download/v0.3.1/ssh-askpass-rs-macos.tar.gz"
-  sha256 "f77746db9bed811eff25885a6c006181c1884ff53c531ba240967d1cb94a66ce"
+  url "https://github.com/dislabled/ssh-askpass-rs/releases/download/v0.3.2/ssh-askpass-rs-macos.tar.gz"
+  sha256 "250e2f1c105d81fc5132a01e9c81e012819b34f3be75236c387a2fcfd86fb19d"
   license "GPL-3.0-only"
-  version "0.3.1"
+  version "0.3.2"
 
   depends_on :macos => :sonoma
 
