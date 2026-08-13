@@ -16,10 +16,8 @@ use objc2_foundation::{MainThreadMarker, NSString};
 /// The default button is deliberately NOT titled "Cancel": AppKit special-cases
 /// that title (binds it to Escape and never makes it the highlighted Return
 /// default), which leaves the dialog without keyboard focus.
-pub fn confirm_autofill(prompt: &str, identifier: &str) -> bool {
+pub fn confirm_autofill(mtm: MainThreadMarker, prompt: &str, identifier: &str) -> bool {
     disable_core_dumps();
-
-    let mtm = MainThreadMarker::new().unwrap();
 
     let app = NSApplication::sharedApplication(mtm);
     app.setActivationPolicy(NSApplicationActivationPolicy::Accessory);

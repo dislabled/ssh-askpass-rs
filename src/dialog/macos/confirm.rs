@@ -6,10 +6,8 @@ use objc2_app_kit::{
 };
 use objc2_foundation::{MainThreadMarker, NSString};
 
-pub fn show(prompt: &str, cancel_only: bool) -> DialogResult {
+pub fn show(mtm: MainThreadMarker, prompt: &str, cancel_only: bool) -> DialogResult {
     disable_core_dumps();
-
-    let mtm = MainThreadMarker::new().unwrap();
 
     let app = NSApplication::sharedApplication(mtm);
     app.setActivationPolicy(NSApplicationActivationPolicy::Accessory);

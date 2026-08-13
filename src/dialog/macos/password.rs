@@ -10,14 +10,13 @@ use objc2_foundation::{MainThreadMarker, NSRect, NSString};
 use zeroize::Zeroizing;
 
 pub fn show(
+    mtm: MainThreadMarker,
     prompt: &str,
     _display_type: &DisplayType,
     identifier: Option<&str>,
     store: &dyn crate::store::SecretStore,
 ) -> DialogResult {
     disable_core_dumps();
-
-    let mtm = MainThreadMarker::new().unwrap();
 
     let app = NSApplication::sharedApplication(mtm);
     app.setActivationPolicy(NSApplicationActivationPolicy::Accessory);
