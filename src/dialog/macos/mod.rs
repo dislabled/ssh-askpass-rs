@@ -1,8 +1,7 @@
 mod autofill;
-mod cleartext;
 mod confirm;
 mod host_key;
-mod password;
+mod text_input;
 
 use crate::prompt::{DialogResult, DisplayType};
 use objc2_app_kit::{NSAlert, NSImage};
@@ -36,9 +35,9 @@ pub fn show(
     let mtm = main_thread();
     match display_type {
         DisplayType::Password | DisplayType::Pin => {
-            password::show(mtm, prompt, display_type, identifier, store)
+            text_input::show(mtm, prompt, true, identifier, store)
         }
-        DisplayType::ClearText => cleartext::show(mtm, prompt, identifier, store),
+        DisplayType::ClearText => text_input::show(mtm, prompt, false, identifier, store),
         DisplayType::Confirm => confirm::show(mtm, prompt, false),
         DisplayType::ConfirmCancel => confirm::show(mtm, prompt, true),
         DisplayType::UnknownSshHost => host_key::show(mtm, prompt),
