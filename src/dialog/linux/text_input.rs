@@ -1,4 +1,4 @@
-use crate::prompt::{DialogResult, DisplayType};
+use crate::prompt::DialogResult;
 use crate::security::disable_core_dumps;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -7,8 +7,10 @@ use zeroize::Zeroizing;
 slint::slint! {
     import { Button, CheckBox, LineEdit } from "std-widgets.slint";
 
-    export component PasswordDialog inherits Window {
+    export component TextInputDialog inherits Window {
+        in property <string> dialog-title;
         in property <string> prompt-text;
+        in property <bool> secure;
         in property <string> checkbox-label;
         in property <bool> show-checkbox;
         in-out property <string> value;
@@ -16,7 +18,7 @@ slint::slint! {
         callback ok();
         callback cancel();
 
-        title: "Enter SSH Credentials";
+        title: dialog-title;
         width: 380px;
         height: layout.preferred-height;
         forward-focus: input;
@@ -31,7 +33,7 @@ slint::slint! {
             }
 
             input := LineEdit {
-                input-type: password;
+                input-type: secure ? password : text;
                 text <=> value;
                 height: 32px;
                 accepted => { ok(); }
@@ -60,16 +62,22 @@ slint::slint! {
     }
 }
 
+/// Prompt for a single line of text. `secure` picks a masked LineEdit
+/// (passwords, PINs) over a plain one (usernames, OTP codes), and with it
+/// the window title.
 pub fn show(
     prompt: &str,
-    _display_type: &DisplayType,
+    secure: bool,
     identifier: Option<&str>,
     store: &dyn crate::store::SecretStore,
 ) -> DialogResult {
     disable_core_dumps();
 
-    let dialog = PasswordDialog::new().unwrap();
+    let dialog = TextInputDialog::new().unwrap();
+    let title = if secure { "Enter SSH Credentials" } else { "SSH" };
+    dialog.set_dialog_title(title.into());
     dialog.set_prompt_text(prompt.into());
+    dialog.set_secure(secure);
 
     // Show the checkbox whenever there is an identifier
     let show_checkbox = identifier.is_some();

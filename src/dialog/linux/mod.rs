@@ -1,8 +1,7 @@
 mod autofill;
-mod cleartext;
 mod confirm;
 mod host_key;
-mod password;
+mod text_input;
 
 pub use autofill::confirm_autofill;
 
@@ -16,9 +15,9 @@ pub fn show(
 ) -> DialogResult {
     match display_type {
         DisplayType::Password | DisplayType::Pin => {
-            password::show(prompt, display_type, identifier, store)
+            text_input::show(prompt, true, identifier, store)
         }
-        DisplayType::ClearText => cleartext::show(prompt, identifier, store),
+        DisplayType::ClearText => text_input::show(prompt, false, identifier, store),
         DisplayType::Confirm => confirm::show(prompt, false),
         DisplayType::ConfirmCancel => confirm::show(prompt, true),
         DisplayType::UnknownSshHost => host_key::show(prompt),
