@@ -1,0 +1,15 @@
+#!/bin/sh
+
+set -e
+
+echo "pre-commit: cargo fmt --check"
+if ! cargo fmt --check; then
+    echo "pre-commit: formatting failed." >&2
+    exit 1
+fi
+
+echo "pre-commit: cargo clippy"
+if ! cargo clippy --all-targets -- -D warnings; then
+    echo "pre-commit: clippy failed." >&2
+    exit 1
+fi

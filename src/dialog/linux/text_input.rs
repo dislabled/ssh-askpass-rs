@@ -74,7 +74,11 @@ pub fn show(
     disable_core_dumps();
 
     let dialog = TextInputDialog::new().unwrap();
-    let title = if secure { "Enter SSH Credentials" } else { "SSH" };
+    let title = if secure {
+        "Enter SSH Credentials"
+    } else {
+        "SSH"
+    };
     dialog.set_dialog_title(title.into());
     dialog.set_prompt_text(prompt.into());
     dialog.set_secure(secure);
