@@ -74,6 +74,37 @@ slint::slint! {
     }
 }
 
+/// Ask a plain yes/no question
+pub fn ask_retry(message: &str) -> bool {
+    disable_core_dumps();
+
+    let dialog = YesNoDialog::new().unwrap();
+    dialog.set_prompt_text(message.into());
+
+    let accepted = Rc::new(RefCell::new(false));
+
+    let accepted_yes = accepted.clone();
+    let weak_yes = dialog.as_weak();
+    dialog.on_yes(move || {
+        *accepted_yes.borrow_mut() = true;
+        if let Some(d) = weak_yes.upgrade() {
+            let _ = d.hide();
+        }
+    });
+
+    let weak_dismiss = dialog.as_weak();
+    dialog.on_dismiss(move || {
+        if let Some(d) = weak_dismiss.upgrade() {
+            let _ = d.hide();
+        }
+    });
+
+    dialog.run().unwrap();
+
+    let result = *accepted.borrow();
+    result
+}
+
 pub fn show(prompt: &str, cancel_only: bool) -> DialogResult {
     disable_core_dumps();
 
@@ -120,4 +151,4 @@ pub fn show(prompt: &str, cancel_only: bool) -> DialogResult {
             DialogResult::Cancelled
         }
     }
-}
+

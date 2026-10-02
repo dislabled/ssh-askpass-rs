@@ -10,4 +10,4 @@ pub use macos::{confirm_autofill, show};
 mod linux;
 
 #[cfg(target_os = "linux")]
-pub use linux::{confirm_autofill, show};
+pub use linux::{ask_retry, confirm_autofill, show};

@@ -63,13 +63,10 @@ impl SecretStore for SecretServiceStore {
     }
 
     // Search only
-    fn exists(&self, id: &str) -> bool {
-        match self.service() {
-            Ok(ss) => ss
-                .search_items(Self::attributes(id))
-                .is_ok_and(|found| !found.unlocked.is_empty() || !found.locked.is_empty()),
-            Err(_) => false,
-        }
+    fn exists(&self, id: &str) -> Result<bool, Box<dyn std::error::Error>> {
+        let ss = self.service()?;
+        let found = ss.search_items(Self::attributes(id))?;
+        Ok(!found.unlocked.is_empty() || !found.locked.is_empty())
     }
 }
 
@@ -83,9 +80,9 @@ mod tests {
     fn roundtrip_live() {
         let store = SecretServiceStore::default();
         let id = "ssh-askpass-rs-selftest@test";
-        assert!(!store.exists(id));
+        assert!(!store.exists(id).expect("exists"));
         store.write(id, b"test1234").expect("write");
-        assert!(store.exists(id));
+        assert!(store.exists(id).expect("exists"));
         let got = store.read(id).expect("read").expect("read back");
         assert_eq!(got.as_str(), "test1234");
 

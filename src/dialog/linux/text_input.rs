@@ -1,3 +1,4 @@
+use super::confirm::ask_retry;
 use crate::prompt::DialogResult;
 use crate::security::disable_core_dumps;
 use std::cell::RefCell;
@@ -87,7 +88,17 @@ pub fn show(
     let show_checkbox = identifier.is_some();
     dialog.set_show_checkbox(show_checkbox);
     if show_checkbox {
-        let overwrite = identifier.is_some_and(|id| store.exists(id));
+        let overwrite = identifier.is_some_and(|id| loop {
+            match store.exists(id) {
+                Ok(v) => break v,
+                Err(e) => {
+                    let msg = format!("Secret store is unavailable: {e}\nTry again?");
+                    if !ask_retry(&msg) {
+                        break false;
+                    }
+                }
+            }
+        });
         dialog.set_checkbox_label(
             if overwrite {
                 "Overwrite stored password"

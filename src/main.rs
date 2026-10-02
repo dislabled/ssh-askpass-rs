@@ -91,6 +91,15 @@ fn gui_confirm_autofill(_prompt: &str, _id: &str) -> AutofillChoice {
     no_gui()
 }
 
+/// Linux: Ask whether to retry a failed secret-store operation
+#[cfg(target_os = "linux")]
+fn confirm_retry(tty: Option<&mut std::fs::File>, message: &str) -> bool {
+    match tty {
+        Some(t) => terminal::ask_retry(t, message),
+        None => dialog::ask_retry(message),
+    }
+}
+
 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
 fn no_gui() -> ! {
     eprintln!(
@@ -133,11 +142,23 @@ fn main() {
     // Attempt keychain lookup
     if !parsed.skip_keychain {
         if let Some(id) = &parsed.identifier {
-            let lookup = store.read(id).unwrap_or_else(|e| {
-                // Warn and fall through to manual entry.
-                eprintln!("ssh-askpass-rs: warning: secret store read failed: {e}");
-                None
-            });
+            let lookup = loop {
+                match store.read(id) {
+                    Ok(v) => break v,
+                    Err(e) => {
+                        eprintln!("ssh-askpass-rs: warning: secret store read failed: {e}");
+                        #[cfg(target_os = "linux")]
+                        {
+                            let msg = format!("Secret store is unavailable: {e}\nTry again?");
+                            if confirm_retry(tty.as_mut(), &msg) {
+                                continue;
+                            }
+                        }
+                        // Fall through to manual entry.
+                        break None;
+                    }
+                }
+            };
             if let Some(password) = lookup {
                 // Gate reusable remote passwords behind a confirmation (unless
                 // disabled system-wide via SSH_ASKPASS_NO_CONFIRM)
@@ -208,8 +229,25 @@ fn main() {
             // Store in keychain only if the user checked the checkbox
             if save_secret {
                 if let Some(id) = &parsed.identifier {
-                    if let Err(e) = store.write(id, secret.as_bytes()) {
-                        eprintln!("ssh-askpass-rs: warning: failed to save password: {e}");
+                    loop {
+                        match store.write(id, secret.as_bytes()) {
+                            Ok(()) => break,
+                            Err(e) => {
+                                eprintln!(
+                                    "ssh-askpass-rs: warning: failed to save password: {e}"
+                                );
+                                #[cfg(target_os = "linux")]
+                                {
+                                    let msg = format!(
+                                        "Secret store is unavailable: {e}\nTry again?"
+                                    );
+                                    if confirm_retry(tty.as_mut(), &msg) {
+                                        continue;
+                                    }
+                                }
+                                break;
+                            }
+                        }
                     }
                 }
             }

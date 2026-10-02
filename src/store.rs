@@ -14,9 +14,10 @@ pub trait SecretStore {
     /// Store `secret` under `id`.
     fn write(&self, id: &str, secret: &[u8]) -> Result<(), Box<dyn std::error::Error>>;
 
-    /// Is there a secret stored under `id`? Only used for prompt wording
-    fn exists(&self, id: &str) -> bool {
-        matches!(self.read(id), Ok(Some(_)))
+    /// `Err` means the backend itself failed (e.g. the store is locked and
+    /// couldn't be queried), as opposed to a confirmed absence.
+    fn exists(&self, id: &str) -> Result<bool, Box<dyn std::error::Error>> {
+        Ok(self.read(id)?.is_some())
     }
 }
 

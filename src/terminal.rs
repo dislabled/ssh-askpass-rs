@@ -154,7 +154,18 @@ fn read_input(
     let save_secret = match identifier {
         Some(id) => {
             // Change wording based on if there is a stored secret.
-            let question = if store.exists(id) {
+            let overwrite = loop {
+                match store.exists(id) {
+                    Ok(v) => break v,
+                    Err(e) => {
+                        let msg = format!("Secret store is unavailable: {e}\nTry again?");
+                        if !ask_retry(tty, &msg) {
+                            break false;
+                        }
+                    }
+                }
+            };
+            let question = if overwrite {
                 format!("Overwrite stored password for '{id}'?")
             } else {
                 format!("Save password for '{id}'?")
@@ -168,6 +179,11 @@ fn read_input(
         secret,
         save_secret,
     }
+}
+
+/// Ask a plain yes/no question (e.g. "retry the failed store operation?").
+pub fn ask_retry<T: Read + Write + RawInput>(tty: &mut T, message: &str) -> bool {
+    prompt_yes_no(tty, message, false)
 }
 
 /// Ask a `[y/N]` / `[Y/n]` question.

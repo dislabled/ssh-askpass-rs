@@ -4,6 +4,7 @@ mod host_key;
 mod text_input;
 
 pub use autofill::confirm_autofill;
+pub use confirm::ask_retry;
 
 use crate::prompt::{DialogResult, DisplayType};
 
